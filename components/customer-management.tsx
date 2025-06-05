@@ -726,9 +726,9 @@ function CustomerTable({
                       ? new Date(customer.lastVisit).toLocaleDateString(
                           "en-GB",
                           {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
                           }
                         )
                       : "Never"}
