@@ -6,9 +6,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-50 to-pink-100">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-200 to-pink-300">
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-pink-700 mb-2">
+            <h2 className="text-xl font-semibold text-pink-300 mb-2">
               Loading...
             </h2>
             <p className="text-gray-600">

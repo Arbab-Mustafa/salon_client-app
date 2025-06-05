@@ -16,10 +16,10 @@ export default function DashboardPage() {
   // Show loading state while checking session
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-pink-50">
+      <div className="min-h-screen flex items-center justify-center bg-pink-300">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-pink-700 mb-2">Loading Dashboard...</h2>
-          <p className="text-gray-600">Please wait while we load your dashboard.</p>
+          <h2 className="text-xl font-semibold text-pink-600 mb-2">Loading Dashboard...</h2>
+          <p className="text-gray-500">Please wait while we load your dashboard.</p>
         </div>
       </div>
     );
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   // If not authenticated, ProtectedRoute component will handle the redirect
   return (
     <ProtectedRoute allowedRoles={["owner"]}>
-      <div className="min-h-screen bg-pink-50">
+      <div className="min-h-screen bg-pink-200">
         <DashboardHeader />
         <main className="container mx-auto p-4 pt-24">
           <DashboardStats />

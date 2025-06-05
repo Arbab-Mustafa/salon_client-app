@@ -67,7 +67,7 @@ export default function LoginForm() {
   // Don't show login form if already authenticated
   if (status === "authenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-50 to-pink-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-pink-100 to-pink-300">
         <div className="text-center">
           <h2 className="text-xl font-semibold text-pink-700 mb-2">
             Redirecting...
@@ -79,7 +79,7 @@ export default function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100 flex flex-col items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-pink-100 to-pink-300 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg border-pink-200">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-64 h-32 relative mb-4">

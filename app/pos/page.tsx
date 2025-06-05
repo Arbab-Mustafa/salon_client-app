@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function POSPage() {
   return (
     <ProtectedRoute allowedRoles={["owner", "therapist", "manager"]}>
-      <div className="min-h-screen bg-pink-50">
+      <div className="min-h-screen bg-pink-200">
         <DashboardHeader />
         <main className="container mx-auto p-4 pt-24">
           <POSInterface />
