@@ -4,45 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import SalesTablesDialog from "./sales-tables-dialog";
-import { format } from "date-fns";
+import { startOfDay, endOfDay, addDays, addMonths } from "date-fns";
 
 function getDateRange(period: string, today: Date) {
-  const startDate = new Date(today);
-  let endDate = new Date(today);
-
-  switch (period) {
-    case "day":
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
-    case "week":
-      // Get the start of the week (Sunday)
-      const day = startDate.getDay();
-      startDate.setDate(startDate.getDate() - day);
-      startDate.setHours(0, 0, 0, 0);
-      // Set end date to 6 days after start
-      endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
-      break;
-    case "month":
-      // Set to first day of current month
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
-      // Set to last day of current month
-      endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-      endDate.setHours(23, 59, 59, 999);
-      break;
-    case "year":
-      // Set to first day of current year
-      startDate.setMonth(0, 1);
-      startDate.setHours(0, 0, 0, 0);
-      // Set to last day of current year
-      endDate = new Date(startDate.getFullYear(), 11, 31);
-      endDate.setHours(23, 59, 59, 999);
-      break;
-  }
-
+  const startDate = startOfDay(today);
+  let endDate = endOfDay(today);
+  if (period === "week") endDate = endOfDay(addDays(startDate, 6));
+  if (period === "month") endDate = endOfDay(addMonths(startDate, 1));
   return { startDate, endDate };
 }
 
@@ -50,31 +18,13 @@ async function fetchSalesTotal(
   startDate: Date,
   endDate: Date
 ): Promise<number> {
-  try {
-    const res = await fetch("/api/reports/summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate, endDate }),
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    const data = await res.json();
-    return data.totalRevenue || 0;
-  } catch (error) {
-    console.error("Error fetching sales total:", error);
-    return 0;
-  }
-}
-
-interface Transaction {
-  _id: string;
-  date: string;
-  total: number;
-  paymentMethod: string;
-  customer?: {
-    name: string;
-  };
+  const res = await fetch("/api/reports/summary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ startDate, endDate }),
+  });
+  const data = await res.json();
+  return data.total || 0;
 }
 
 export default function DashboardStats() {
@@ -87,22 +37,6 @@ export default function DashboardStats() {
   const [yearlySales, setYearlySales] = useState(0);
   const [lastYearSales, setLastYearSales] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<{
-    totalRevenue: number;
-    totalTransactions: number;
-    averageTransactionValue: number;
-    cardPayments: number;
-    cashPayments: number;
-  }>({
-    totalRevenue: 0,
-    totalTransactions: 0,
-    averageTransactionValue: 0,
-    cardPayments: 0,
-    cashPayments: 0,
-  });
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [period, setPeriod] = useState("today");
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -280,48 +214,6 @@ export default function DashboardStats() {
 
     setDialogData({ startDate, endDate, title, period });
     setDialogOpen(true);
-  };
-
-  const renderTransactionList = () => {
-    if (!transactions.length) return null;
-
-    return (
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold mb-2">Recent Transactions</h3>
-        <div className="space-y-2">
-          {transactions.map((transaction) => (
-            <div
-              key={transaction._id}
-              className="flex items-center justify-between p-2 bg-white rounded-lg shadow"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
-                    <span className="text-pink-600 font-semibold">
-                      {transaction.customer?.name?.[0] || "?"}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="font-medium">
-                    {transaction.customer?.name || "Unknown"}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {format(new Date(transaction.date), "PPP")}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">£{transaction.total.toFixed(2)}</p>
-                <p className="text-sm text-gray-500">
-                  {transaction.paymentMethod}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   if (isLoading) {

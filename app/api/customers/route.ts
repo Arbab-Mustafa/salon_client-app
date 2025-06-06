@@ -23,31 +23,33 @@ export async function GET() {
 }
 
 // POST new customer
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    console.log("MONGODB_URI:", process.env.MONGODB_URI);
+    const body = await req.json();
+    const { name, phone, email } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: "Customer name is required" },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
-    const data = await request.json();
-    console.log("Creating new customer with data:", data);
 
-    // Ensure 'active' is set, default to true if not provided
-    if (typeof data.active !== "boolean") data.active = true;
-    // Ensure both 'phone' and 'mobile' are set
-    if (!data.phone && data.mobile) data.phone = data.mobile;
-    if (!data.mobile && data.phone) data.mobile = data.phone;
-
-    // Always include 'active' in the document
     const customer = await Customer.create({
-      ...data,
-      active: data.active,
+      name,
+      phone,
+      email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
-    console.log("Customer created successfully:", customer);
 
-    return NextResponse.json(customer, { status: 201 });
+    return NextResponse.json(customer);
   } catch (error: any) {
     console.error("Error creating customer:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create customer" },
+      { error: "Failed to create customer" },
       { status: 500 }
     );
   }

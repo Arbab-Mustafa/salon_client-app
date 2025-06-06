@@ -7,19 +7,10 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable");
 }
 
-interface MongooseCache {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-}
+let cached = global.mongoose;
 
-declare global {
-  var mongoose: MongooseCache | undefined;
-}
-
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
-
-if (!global.mongoose) {
-  global.mongoose = cached;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
@@ -30,25 +21,14 @@ export async function connectToDatabase() {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: true,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      family: 4,
+      bufferCommands: false,
     };
 
     console.log("Connecting to MongoDB...");
-    cached.promise = mongoose
-      .connect(MONGODB_URI, opts)
-      .then((mongoose) => {
-        console.log("MongoDB connected successfully");
-        return mongoose;
-      })
-      .catch((error) => {
-        console.error("MongoDB connection error:", error);
-        cached.promise = null;
-        throw error;
-      });
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log("MongoDB connected successfully");
+      return mongoose;
+    });
   }
 
   try {
@@ -62,12 +42,4 @@ export async function connectToDatabase() {
   return cached.conn;
 }
 
-export default async function getMongoConnection() {
-  try {
-    const conn = await connectToDatabase();
-    return conn;
-  } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-    throw error;
-  }
-}
+export default connectToDatabase;

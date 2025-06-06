@@ -112,7 +112,7 @@ export default function ReportsInterface() {
       }),
     })
       .then((res) => res.json())
-      .then((data) => setTransactions(data.transactions || []));
+      .then(setTransactions);
 
     fetch("/api/reports/unique")
       .then((res) => res.json())
@@ -391,19 +391,19 @@ export default function ReportsInterface() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Select value={therapistFilter} onValueChange={setTherapistFilter}>
-              <SelectTrigger className="border-pink-200">
-                <SelectValue placeholder="All Therapists" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Therapists</SelectItem>
+              <Select value={therapistFilter} onValueChange={setTherapistFilter}>
+                <SelectTrigger className="border-pink-200">
+                  <SelectValue placeholder="All Therapists" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Therapists</SelectItem>
                 {uniqueFilters.therapists.map((therapist) => (
                   <SelectItem key={therapist} value={therapist}>
-                    {therapist}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                      {therapist}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
               <SelectTrigger className="border-pink-200">
                 <SelectValue placeholder="All Customers" />
@@ -496,10 +496,10 @@ export default function ReportsInterface() {
             {reportType === "therapist"
               ? "Revenue by Therapist"
               : reportType === "customer"
-              ? "Revenue by Customer"
-              : reportType === "service"
-              ? "Revenue by Service/Product"
-              : "Transaction List"}
+                ? "Revenue by Customer"
+                : reportType === "service"
+                  ? "Revenue by Service/Product"
+                  : "Transaction List"}
           </CardTitle>
           <CardDescription>{dateRangeLabel}</CardDescription>
         </CardHeader>

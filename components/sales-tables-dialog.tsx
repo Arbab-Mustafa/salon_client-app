@@ -71,11 +71,6 @@ export default function SalesTablesDialog({
         cardAmount: number;
         cashAmount: number;
         transactionCount: number;
-        transactions: Array<{
-          date: string;
-          amount: number;
-          paymentMethod: string;
-        }>;
       }
     > = {};
 
@@ -88,17 +83,11 @@ export default function SalesTablesDialog({
           cardAmount: 0,
           cashAmount: 0,
           transactionCount: 0,
-          transactions: [],
         };
       }
       const amount = transaction.total - (transaction.discount || 0);
       grouped[therapistId].totalAmount += amount;
       grouped[therapistId].transactionCount += 1;
-      grouped[therapistId].transactions.push({
-        date: format(new Date(transaction.date), "yyyy-MM-dd HH:mm"),
-        amount,
-        paymentMethod: transaction.paymentMethod,
-      });
       if (transaction.paymentMethod?.toLowerCase() === "card") {
         grouped[therapistId].cardAmount += amount;
       } else {
@@ -117,10 +106,6 @@ export default function SalesTablesDialog({
         name: string;
         totalAmount: number;
         transactionCount: number;
-        transactions: Array<{
-          date: string;
-          amount: number;
-        }>;
       }
     > = {};
     transactions.forEach((transaction) => {
@@ -130,16 +115,11 @@ export default function SalesTablesDialog({
           name: transaction.customer?.name || "Unknown",
           totalAmount: 0,
           transactionCount: 0,
-          transactions: [],
         };
       }
       const amount = transaction.total - (transaction.discount || 0);
       grouped[customerId].totalAmount += amount;
       grouped[customerId].transactionCount += 1;
-      grouped[customerId].transactions.push({
-        date: format(new Date(transaction.date), "yyyy-MM-dd HH:mm"),
-        amount,
-      });
     });
     return Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
   };
@@ -153,11 +133,6 @@ export default function SalesTablesDialog({
         category: string;
         totalAmount: number;
         transactionCount: number;
-        transactions: Array<{
-          date: string;
-          amount: number;
-          quantity: number;
-        }>;
       }
     > = {};
     transactions.forEach((transaction) => {
@@ -169,17 +144,11 @@ export default function SalesTablesDialog({
             category: item.category || "",
             totalAmount: 0,
             transactionCount: 0,
-            transactions: [],
           };
         }
-        const amount = item.price * item.quantity - (item.discount || 0);
-        grouped[key].totalAmount += amount;
+        grouped[key].totalAmount +=
+          item.price * item.quantity - (item.discount || 0);
         grouped[key].transactionCount += item.quantity;
-        grouped[key].transactions.push({
-          date: format(new Date(transaction.date), "yyyy-MM-dd HH:mm"),
-          amount,
-          quantity: item.quantity,
-        });
       });
     });
     return Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
@@ -198,15 +167,15 @@ export default function SalesTablesDialog({
 
     if (activeTab === "therapists") {
       // Create CSV header
-      csvContent = "Therapist,Date,Amount,Payment Method,Total\n";
+      csvContent = "Therapist,Card Payments,Cash Payments,Total,Transactions\n";
 
       // Add data rows
       therapistData().forEach((therapist) => {
-        therapist.transactions.forEach((tx) => {
-          csvContent += `"${therapist.name}","${tx.date}","${tx.amount.toFixed(
-            2
-          )}","${tx.paymentMethod}","£${therapist.totalAmount.toFixed(2)}"\n`;
-        });
+        csvContent += `"${therapist.name}",${therapist.cardAmount.toFixed(
+          2
+        )},${therapist.cashAmount.toFixed(2)},${therapist.totalAmount.toFixed(
+          2
+        )},${therapist.transactionCount}\n`;
       });
 
       // Add totals row
@@ -227,20 +196,20 @@ export default function SalesTablesDialog({
         0
       );
 
-      csvContent += `"TOTAL",,"","",£${totalAmount.toFixed(2)}\n`;
+      csvContent += `"TOTAL",${totalCard.toFixed(2)},${totalCash.toFixed(
+        2
+      )},${totalAmount.toFixed(2)},${totalTransactions}\n`;
 
       fileName = `therapist_sales_${dateRangeFormatted}.csv`;
     } else if (activeTab === "customers") {
       // Create CSV header
-      csvContent = "Customer,Date,Amount,Total\n";
+      csvContent = "Customer,Total Spent,Transactions\n";
 
       // Add data rows
       customerData().forEach((customer) => {
-        customer.transactions.forEach((tx) => {
-          csvContent += `"${customer.name}","${tx.date}","${tx.amount.toFixed(
-            2
-          )}","£${customer.totalAmount.toFixed(2)}"\n`;
-        });
+        csvContent += `"${customer.name}",${customer.totalAmount.toFixed(2)},${
+          customer.transactionCount
+        }\n`;
       });
 
       // Add totals row
@@ -253,22 +222,18 @@ export default function SalesTablesDialog({
         0
       );
 
-      csvContent += `"TOTAL",,"",£${totalAmount.toFixed(2)}\n`;
+      csvContent += `"TOTAL",${totalAmount.toFixed(2)},${totalTransactions}\n`;
 
       fileName = `customer_sales_${dateRangeFormatted}.csv`;
     } else if (activeTab === "services") {
       // Create CSV header
-      csvContent = "Service/Product,Category,Date,Amount,Quantity,Total\n";
+      csvContent = "Service/Product,Category,Total Revenue,Count\n";
 
       // Add data rows
       serviceData().forEach((service) => {
-        service.transactions.forEach((tx) => {
-          csvContent += `"${service.name}","${service.category}","${
-            tx.date
-          }","${tx.amount.toFixed(2)}","${
-            tx.quantity
-          }","£${service.totalAmount.toFixed(2)}"\n`;
-        });
+        csvContent += `"${service.name}","${
+          service.category
+        }",${service.totalAmount.toFixed(2)},${service.transactionCount}\n`;
       });
 
       // Add totals row
@@ -281,7 +246,7 @@ export default function SalesTablesDialog({
         0
       );
 
-      csvContent += `"TOTAL","",,"",${totalCount},£${totalAmount.toFixed(2)}\n`;
+      csvContent += `"TOTAL","",${totalAmount.toFixed(2)},${totalCount}\n`;
 
       fileName = `service_sales_${dateRangeFormatted}.csv`;
     }
@@ -347,32 +312,61 @@ export default function SalesTablesDialog({
                       <TableHeader>
                         <TableRow>
                           <TableHead>Therapist</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Payment Method</TableHead>
-                          <TableHead>Total</TableHead>
+                          <TableHead className="text-right">Card</TableHead>
+                          <TableHead className="text-right">Cash</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-right">
+                            Transactions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {therapistData().map((therapist) => (
-                          <>
-                            {therapist.transactions.map((tx, index) => (
-                              <TableRow key={`${therapist.name}-${index}`}>
-                                <TableCell>
-                                  {index === 0 ? therapist.name : ""}
-                                </TableCell>
-                                <TableCell>{tx.date}</TableCell>
-                                <TableCell>£{tx.amount.toFixed(2)}</TableCell>
-                                <TableCell>{tx.paymentMethod}</TableCell>
-                                <TableCell>
-                                  {index === 0
-                                    ? `£${therapist.totalAmount.toFixed(2)}`
-                                    : ""}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </>
+                          <TableRow key={therapist.name}>
+                            <TableCell className="font-medium">
+                              {therapist.name}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              £{therapist.cardAmount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              £{therapist.cashAmount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              £{therapist.totalAmount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {therapist.transactionCount}
+                            </TableCell>
+                          </TableRow>
                         ))}
+                        <TableRow className="bg-pink-50">
+                          <TableCell className="font-bold">Total</TableCell>
+                          <TableCell className="text-right font-bold">
+                            £
+                            {therapistData()
+                              .reduce((sum, t) => sum + t.cardAmount, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            £
+                            {therapistData()
+                              .reduce((sum, t) => sum + t.cashAmount, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            £
+                            {therapistData()
+                              .reduce((sum, t) => sum + t.totalAmount, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            {therapistData().reduce(
+                              (sum, t) => sum + t.transactionCount,
+                              0
+                            )}
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </TabsContent>
@@ -382,30 +376,43 @@ export default function SalesTablesDialog({
                       <TableHeader>
                         <TableRow>
                           <TableHead>Customer</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Total</TableHead>
+                          <TableHead className="text-right">
+                            Total Spent
+                          </TableHead>
+                          <TableHead className="text-right">
+                            Transactions
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {customerData().map((customer) => (
-                          <>
-                            {customer.transactions.map((tx, index) => (
-                              <TableRow key={`${customer.name}-${index}`}>
-                                <TableCell>
-                                  {index === 0 ? customer.name : ""}
-                                </TableCell>
-                                <TableCell>{tx.date}</TableCell>
-                                <TableCell>£{tx.amount.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  {index === 0
-                                    ? `£${customer.totalAmount.toFixed(2)}`
-                                    : ""}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </>
+                          <TableRow key={customer.name}>
+                            <TableCell className="font-medium">
+                              {customer.name}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              £{customer.totalAmount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {customer.transactionCount}
+                            </TableCell>
+                          </TableRow>
                         ))}
+                        <TableRow className="bg-pink-50">
+                          <TableCell className="font-bold">Total</TableCell>
+                          <TableCell className="text-right font-bold">
+                            £
+                            {customerData()
+                              .reduce((sum, c) => sum + c.totalAmount, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            {customerData().reduce(
+                              (sum, c) => sum + c.transactionCount,
+                              0
+                            )}
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </TabsContent>
@@ -416,35 +423,43 @@ export default function SalesTablesDialog({
                         <TableRow>
                           <TableHead>Service/Product</TableHead>
                           <TableHead>Category</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Total</TableHead>
+                          <TableHead className="text-right">
+                            Total Revenue
+                          </TableHead>
+                          <TableHead className="text-right">Count</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {serviceData().map((service) => (
-                          <>
-                            {service.transactions.map((tx, index) => (
-                              <TableRow key={`${service.name}-${index}`}>
-                                <TableCell>
-                                  {index === 0 ? service.name : ""}
-                                </TableCell>
-                                <TableCell>
-                                  {index === 0 ? service.category : ""}
-                                </TableCell>
-                                <TableCell>{tx.date}</TableCell>
-                                <TableCell>£{tx.amount.toFixed(2)}</TableCell>
-                                <TableCell>{tx.quantity}</TableCell>
-                                <TableCell>
-                                  {index === 0
-                                    ? `£${service.totalAmount.toFixed(2)}`
-                                    : ""}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </>
+                          <TableRow key={service.name + service.category}>
+                            <TableCell className="font-medium">
+                              {service.name}
+                            </TableCell>
+                            <TableCell>{service.category}</TableCell>
+                            <TableCell className="text-right">
+                              £{service.totalAmount.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {service.transactionCount}
+                            </TableCell>
+                          </TableRow>
                         ))}
+                        <TableRow className="bg-pink-50">
+                          <TableCell className="font-bold">Total</TableCell>
+                          <TableCell></TableCell>
+                          <TableCell className="text-right font-bold">
+                            £
+                            {serviceData()
+                              .reduce((sum, s) => sum + s.totalAmount, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            {serviceData().reduce(
+                              (sum, s) => sum + s.transactionCount,
+                              0
+                            )}
+                          </TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </TabsContent>

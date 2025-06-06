@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getMongoConnection from "@/lib/mongodb";
+import clientPromise from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 import type { TransactionData } from "@/data/reports-data";
 import type { Model } from "mongoose";
@@ -7,17 +7,18 @@ import type { Model } from "mongoose";
 export async function POST(req: NextRequest) {
   try {
     const { startDate, endDate } = await req.json();
-
     if (!startDate || !endDate) {
       return NextResponse.json(
-        { error: "Start date and end date are required" },
+        { error: "Missing startDate or endDate" },
         { status: 400 }
       );
     }
+    // Ensure DB connection (for Mongoose, this is usually handled globally)
+    await clientPromise;
 
+    // Parse dates
     const start = new Date(startDate);
     const end = new Date(endDate);
-
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return NextResponse.json(
         { error: "Invalid date format" },
@@ -25,66 +26,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ensure we have a MongoDB connection
-    await getMongoConnection();
+    // Explicitly type Transaction as a Model<TransactionData>
+    const TransactionModel = Transaction as Model<TransactionData>;
+    const transactions: TransactionData[] = await TransactionModel.find({
+      date: { $gte: start, $lte: end },
+    }).lean();
 
-    // Get transactions for the date range
-    const transactions = await Transaction.find({
-      date: {
-        $gte: start,
-        $lte: end,
-      },
-    })
-      .populate("customer", "name")
-      .populate("therapist", "name")
-      .sort({ date: -1 })
-      .lean();
-
-    // Calculate summary statistics
-    const totalRevenue = transactions.reduce(
-      (sum, t) => sum + (t.total - (t.discount || 0)),
-      0
-    );
-    const totalTransactions = transactions.length;
-    const averageTransactionValue =
-      totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-
-    // Calculate payment method breakdown
-    const cardPayments = transactions.reduce((sum, t) => {
-      if (t.paymentMethod?.toLowerCase() === "card") {
-        return sum + (t.total - (t.discount || 0));
-      }
-      return sum;
-    }, 0);
-
-    const cashPayments = transactions.reduce((sum, t) => {
-      if (t.paymentMethod?.toLowerCase() !== "card") {
-        return sum + (t.total - (t.discount || 0));
-      }
-      return sum;
-    }, 0);
-
-    return NextResponse.json({
-      totalRevenue,
-      totalTransactions,
-      averageTransactionValue,
-      cardPayments,
-      cashPayments,
-      transactions: transactions.map((t) => ({
-        _id: t._id,
-        date: t.date,
-        total: t.total,
-        discount: t.discount,
-        paymentMethod: t.paymentMethod,
-        customer: t.customer,
-        therapist: t.therapist,
-        items: t.items,
-      })),
+    // Debug logging
+    console.log("/api/reports/summary", {
+      startDate,
+      endDate,
+      start,
+      end,
+      transactionCount: transactions.length,
     });
-  } catch (error) {
-    console.error("Error in summary report:", error);
+
+    // Sum all items in all transactions
+    let total = 0;
+    transactions.forEach((tx) => {
+      if (Array.isArray(tx.items)) {
+        tx.items.forEach((item) => {
+          total += item.price * item.quantity - (item.discount || 0);
+        });
+      }
+    });
+
+    return NextResponse.json({ total });
+  } catch (error: any) {
+    console.error("/api/reports/summary error:", error);
     return NextResponse.json(
-      { error: "Failed to generate summary report" },
+      { error: error.message || "Internal Server Error" },
       { status: 500 }
     );
   }
