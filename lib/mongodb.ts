@@ -30,7 +30,7 @@ export async function connectToDatabase() {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false,
+      bufferCommands: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
@@ -62,4 +62,12 @@ export async function connectToDatabase() {
   return cached.conn;
 }
 
-export default connectToDatabase;
+export default async function getMongoConnection() {
+  try {
+    const conn = await connectToDatabase();
+    return conn;
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    throw error;
+  }
+}
