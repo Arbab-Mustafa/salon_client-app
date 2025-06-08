@@ -48,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Pencil, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type UserFormData = {
   name: string;
@@ -81,6 +82,17 @@ export default function UserManagement() {
   const [formData, setFormData] = useState<UserFormData>(initialFormData);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<UserFormData>>({});
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">(
+    "all"
+  );
+
+  // Filter users based on active tab
+  const filteredUsers = users.filter((user) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "active") return user.active;
+    if (activeTab === "inactive") return !user.active;
+    return true;
+  });
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -236,7 +248,7 @@ export default function UserManagement() {
       username: user.username,
       email: user.email || "",
       role: user.role as "owner" | "therapist",
-      active: user.active !== false,
+      active: user.active,
       password: "",
       confirmPassword: "",
       employmentType: user.employmentType || "employed",
@@ -442,98 +454,326 @@ export default function UserManagement() {
         </Dialog>
       </div>
 
-      <Card className="border-pink-200">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Employment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "owner" ? "default" : "outline"}
-                      className={
-                        user.role === "owner"
-                          ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
-                          : "bg-pink-100 text-pink-800 hover:bg-pink-100"
-                      }
-                    >
-                      {user.role === "owner" ? "Owner" : "Therapist"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        user.employmentType === "employed"
-                          ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                          : "bg-green-100 text-green-800 hover:bg-green-100"
-                      }
-                    >
-                      {user.employmentType === "employed"
-                        ? "Employed"
-                        : "Self-Employed"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.active !== false ? "default" : "outline"}
-                      className={
-                        user.active !== false
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                      }
-                    >
-                      {user.active !== false ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => openDeleteDialog(user._id ?? "")}
-                          className="text-red-600 focus:text-red-600"
-                          disabled={
-                            user.role === "owner" && user.username === "Sarah"
+      <Tabs
+        defaultValue="all"
+        value={activeTab}
+        onValueChange={(value) =>
+          setActiveTab(value as "all" | "active" | "inactive")
+        }
+      >
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger
+            value="all"
+            className="data-[state=active]:bg-pink-100 data-[state=active]:text-pink-800"
+          >
+            All Users
+          </TabsTrigger>
+          <TabsTrigger
+            value="active"
+            className="data-[state=active]:bg-pink-100 data-[state=active]:text-pink-800"
+          >
+            Active
+          </TabsTrigger>
+          <TabsTrigger
+            value="inactive"
+            className="data-[state=active]:bg-pink-100 data-[state=active]:text-pink-800"
+          >
+            Inactive
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="m-0">
+          <Card className="border-pink-200">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.role === "owner" ? "default" : "outline"
+                          }
+                          className={
+                            user.role === "owner"
+                              ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
+                              : "bg-pink-100 text-pink-800 hover:bg-pink-100"
                           }
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          {user.role === "owner" ? "Owner" : "Therapist"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            user.employmentType === "employed"
+                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+                              : "bg-green-100 text-green-800 hover:bg-green-100"
+                          }
+                        >
+                          {user.employmentType === "employed"
+                            ? "Employed"
+                            : "Self-Employed"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={user.active ? "default" : "outline"}
+                          className={
+                            user.active
+                              ? "bg-green-100 text-green-800 hover:bg-green-100"
+                              : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                          }
+                        >
+                          {user.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(user._id ?? "")}
+                              className="text-red-600 focus:text-red-600"
+                              disabled={
+                                user.role === "owner" &&
+                                user.username === "Sarah"
+                              }
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="active" className="m-0">
+          <Card className="border-pink-200">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.role === "owner" ? "default" : "outline"
+                          }
+                          className={
+                            user.role === "owner"
+                              ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
+                              : "bg-pink-100 text-pink-800 hover:bg-pink-100"
+                          }
+                        >
+                          {user.role === "owner" ? "Owner" : "Therapist"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            user.employmentType === "employed"
+                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+                              : "bg-green-100 text-green-800 hover:bg-green-100"
+                          }
+                        >
+                          {user.employmentType === "employed"
+                            ? "Employed"
+                            : "Self-Employed"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="default"
+                          className="bg-green-100 text-green-800 hover:bg-green-100"
+                        >
+                          Active
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(user._id ?? "")}
+                              className="text-red-600 focus:text-red-600"
+                              disabled={
+                                user.role === "owner" &&
+                                user.username === "Sarah"
+                              }
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inactive" className="m-0">
+          <Card className="border-pink-200">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Employment</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.role === "owner" ? "default" : "outline"
+                          }
+                          className={
+                            user.role === "owner"
+                              ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
+                              : "bg-pink-100 text-pink-800 hover:bg-pink-100"
+                          }
+                        >
+                          {user.role === "owner" ? "Owner" : "Therapist"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            user.employmentType === "employed"
+                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+                              : "bg-green-100 text-green-800 hover:bg-green-100"
+                          }
+                        >
+                          {user.employmentType === "employed"
+                            ? "Employed"
+                            : "Self-Employed"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="bg-gray-100 text-gray-800 hover:bg-gray-100"
+                        >
+                          Inactive
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openDeleteDialog(user._id ?? "")}
+                              className="text-red-600 focus:text-red-600"
+                              disabled={
+                                user.role === "owner" &&
+                                user.username === "Sarah"
+                              }
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

@@ -79,6 +79,9 @@ export async function POST(request: Request) {
       password: data.password,
       name: data.name.trim(),
       role: data.role || "user",
+      active: data.active !== undefined ? Boolean(data.active) : true,
+      employmentType: data.employmentType,
+      hourlyRate: data.hourlyRate ? Number(data.hourlyRate) : undefined,
     };
 
     console.log("Normalized user data:", {
@@ -158,19 +161,35 @@ export async function PATCH(request: Request) {
     await connectToDatabase();
     const data = await request.json();
     const { id, ...update } = data;
+
     if (!id) {
       return NextResponse.json(
         { error: "User ID is required" },
         { status: 400 }
       );
     }
-    const user = await User.findByIdAndUpdate(id, update, {
-      new: true,
-      runValidators: true,
-    });
+
+    // Ensure active state is properly handled
+    if ('active' in update) {
+      update.active = Boolean(update.active);
+    }
+
+    // Add updatedAt timestamp
+    update.updatedAt = new Date();
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: update },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
     const userObj = user.toObject();
     delete userObj.password;
     return NextResponse.json(userObj);

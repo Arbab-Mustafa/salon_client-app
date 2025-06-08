@@ -15,6 +15,9 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  active: boolean;
+  employmentType: string;
+  hourlyRate: number;
 }
 
 // Define schema with strict validation
@@ -76,6 +79,22 @@ const userSchema = new Schema<IUser>(
           "Role must be one of 'user', 'admin', 'owner', 'therapist', 'manager'",
       },
       default: "user",
+    },
+    active: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    employmentType: {
+      type: String,
+      enum: {
+        values: ["employed", "self-employed"],
+        message: "Employment type must be either 'employed' or 'self-employed'",
+      },
+    },
+    hourlyRate: {
+      type: Number,
+      min: [0, "Hourly rate cannot be negative"],
     },
   },
   {
