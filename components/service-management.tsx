@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 import {
   Select,
   SelectContent,
@@ -86,6 +87,10 @@ export default function ServiceManagement() {
   const [currentServiceId, setCurrentServiceId] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<ServiceFormData>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeField, setActiveField] = useState<
+    "name" | "description" | "price" | "duration" | null
+  >(null);
 
   // Map _id to id for UI compatibility
   const mappedServices: ServiceItem[] = services.map((service: any) => ({
@@ -100,6 +105,43 @@ export default function ServiceManagement() {
   const resetForm = () => {
     setFormData({ ...initialFormData, category: activeTab });
     setFormErrors({});
+    setShowKeyboard(false);
+    setActiveField(null);
+  };
+
+  const handleKeyPress = (key: string) => {
+    if (!activeField) return;
+
+    const updateField = (field: string, setter: (value: string) => void) => {
+      if (key === "backspace") {
+        setter(field.slice(0, -1));
+      } else if (key === "space") {
+        setter(field + " ");
+      } else if (key === "clear") {
+        setter("");
+      } else {
+        // For price and duration fields, only allow numbers and decimal points
+        if (
+          (activeField === "price" || activeField === "duration") &&
+          !/^[0-9.]$/.test(key)
+        ) {
+          return;
+        }
+        // For price field, ensure only one decimal point
+        if (activeField === "price" && key === "." && field.includes(".")) {
+          return;
+        }
+        setter(field + key);
+      }
+    };
+
+    const currentValue = formData[activeField].toString();
+    updateField(currentValue, (newValue) => {
+      setFormData((prev) => ({
+        ...prev,
+        [activeField]: newValue, // Keep as string for consistency
+      }));
+    });
   };
 
   const handleInputChange = (
@@ -127,21 +169,32 @@ export default function ServiceManagement() {
 
     if (!formData.name.trim()) errors.name = "Name is required";
 
-    if (!formData.price.trim()) {
+    // Handle both string and number types for price
+    const priceValue =
+      typeof formData.price === "string"
+        ? formData.price.trim()
+        : formData.price.toString();
+    if (!priceValue || priceValue === "0") {
       errors.price = "Price is required";
     } else if (
-      isNaN(Number.parseFloat(formData.price)) ||
-      Number.parseFloat(formData.price) < 0
+      isNaN(Number.parseFloat(priceValue)) ||
+      Number.parseFloat(priceValue) < 0
     ) {
       errors.price = "Price must be a valid number";
     }
 
-    if (
-      formData.duration &&
-      (isNaN(Number.parseInt(formData.duration)) ||
-        Number.parseInt(formData.duration) <= 0)
-    ) {
-      errors.duration = "Duration must be a valid number";
+    // Handle both string and number types for duration
+    if (formData.duration) {
+      const durationValue =
+        typeof formData.duration === "string"
+          ? formData.duration.trim()
+          : formData.duration.toString();
+      if (
+        isNaN(Number.parseInt(durationValue)) ||
+        Number.parseInt(durationValue) <= 0
+      ) {
+        errors.duration = "Duration must be a valid number";
+      }
     }
 
     setFormErrors(errors);
@@ -252,14 +305,14 @@ export default function ServiceManagement() {
               Add New Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Add New Service or Product</DialogTitle>
               <DialogDescription>
                 Create a new service or product for your salon.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
               <div className="grid gap-2">
                 <Label htmlFor="name">Service Name</Label>
                 <Input
@@ -267,7 +320,10 @@ export default function ServiceManagement() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className={formErrors.name ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("name")}
+                  className={
+                    formErrors.name ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.name && (
                   <p className="text-xs text-red-500">{formErrors.name}</p>
@@ -280,7 +336,8 @@ export default function ServiceManagement() {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  className="resize-none"
+                  onFocus={() => setActiveField("description")}
+                  className="resize-none border-pink-200"
                   rows={3}
                 />
               </div>
@@ -295,7 +352,10 @@ export default function ServiceManagement() {
                     min="0"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className={formErrors.price ? "border-red-500" : ""}
+                    onFocus={() => setActiveField("price")}
+                    className={
+                      formErrors.price ? "border-red-500" : "border-pink-200"
+                    }
                   />
                   {formErrors.price && (
                     <p className="text-xs text-red-500">{formErrors.price}</p>
@@ -310,7 +370,10 @@ export default function ServiceManagement() {
                     min="1"
                     value={formData.duration}
                     onChange={handleInputChange}
-                    className={formErrors.duration ? "border-red-500" : ""}
+                    onFocus={() => setActiveField("duration")}
+                    className={
+                      formErrors.duration ? "border-red-500" : "border-pink-200"
+                    }
                   />
                   {formErrors.duration && (
                     <p className="text-xs text-red-500">
@@ -345,6 +408,25 @@ export default function ServiceManagement() {
                 />
                 <Label htmlFor="active">Active</Label>
               </div>
+
+              {/* Keyboard Toggle Button */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={showKeyboard ? "default" : "outline"}
+                  className="flex-1 border-pink-200"
+                  onClick={() => setShowKeyboard(!showKeyboard)}
+                >
+                  {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                </Button>
+              </div>
+
+              {/* On-Screen Keyboard */}
+              {showKeyboard && (
+                <div className="mt-3 border-t pt-3">
+                  <OnScreenKeyboard onKeyPress={handleKeyPress} />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -573,14 +655,14 @@ export default function ServiceManagement() {
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Service</DialogTitle>
             <DialogDescription>
               Update service or product information.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
             <div className="grid gap-2">
               <Label htmlFor="edit-name">Service Name</Label>
               <Input
@@ -588,7 +670,10 @@ export default function ServiceManagement() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={formErrors.name ? "border-red-500" : ""}
+                onFocus={() => setActiveField("name")}
+                className={
+                  formErrors.name ? "border-red-500" : "border-pink-200"
+                }
               />
               {formErrors.name && (
                 <p className="text-xs text-red-500">{formErrors.name}</p>
@@ -601,7 +686,8 @@ export default function ServiceManagement() {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="resize-none"
+                onFocus={() => setActiveField("description")}
+                className="resize-none border-pink-200"
                 rows={3}
               />
             </div>
@@ -616,7 +702,10 @@ export default function ServiceManagement() {
                   min="0"
                   value={formData.price}
                   onChange={handleInputChange}
-                  className={formErrors.price ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("price")}
+                  className={
+                    formErrors.price ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.price && (
                   <p className="text-xs text-red-500">{formErrors.price}</p>
@@ -631,7 +720,10 @@ export default function ServiceManagement() {
                   min="1"
                   value={formData.duration}
                   onChange={handleInputChange}
-                  className={formErrors.duration ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("duration")}
+                  className={
+                    formErrors.duration ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.duration && (
                   <p className="text-xs text-red-500">{formErrors.duration}</p>
@@ -664,6 +756,25 @@ export default function ServiceManagement() {
               />
               <Label htmlFor="edit-active">Active</Label>
             </div>
+
+            {/* Keyboard Toggle Button */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={showKeyboard ? "default" : "outline"}
+                className="flex-1 border-pink-200"
+                onClick={() => setShowKeyboard(!showKeyboard)}
+              >
+                {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+              </Button>
+            </div>
+
+            {/* On-Screen Keyboard */}
+            {showKeyboard && (
+              <div className="mt-3 border-t pt-3">
+                <OnScreenKeyboard onKeyPress={handleKeyPress} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button

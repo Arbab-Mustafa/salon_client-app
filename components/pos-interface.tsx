@@ -378,17 +378,17 @@ export default function PosInterface() {
       {/* Cart & Checkout */}
       <div>
         <Card className="border-pink-200">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center">
-                <ShoppingCart className="mr-2 h-5 w-5" />
+              <CardTitle className="flex items-center text-base">
+                <ShoppingCart className="mr-2 h-4 w-4" />
                 Cart
               </CardTitle>
               {cart.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 text-xs"
                   onClick={clearCart}
                 >
                   Clear All
@@ -397,42 +397,46 @@ export default function PosInterface() {
             </div>
           </CardHeader>
           <CardContent
-            className="flex flex-col"
-            style={{ height: "calc(100vh - 300px)", minHeight: "400px" }}
+            className="flex flex-col p-3"
+            style={{ height: "calc(100vh - 280px)", minHeight: "300px" }}
           >
             <div className="flex-grow">
               {cart.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 text-muted-foreground text-sm">
                   Your cart is empty
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[calc(100vh-450px)] overflow-y-auto pr-1">
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between border-b border-pink-100 pb-3"
+                      className="flex items-center justify-between border-b border-pink-100 pb-2"
                     >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">
+                          {item.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
                           £{item.price.toFixed(2)} each
                         </p>
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-center ml-2">
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7 rounded-full"
+                          className="h-6 w-6 rounded-full"
                           onClick={() => updateQuantity(item.id, -1)}
                         >
                           <Minus className="h-3 w-3" />
                           <span className="sr-only">Decrease</span>
                         </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
+                        <span className="w-6 text-center text-sm">
+                          {item.quantity}
+                        </span>
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-7 w-7 rounded-full"
+                          className="h-6 w-6 rounded-full"
                           onClick={() => updateQuantity(item.id, 1)}
                         >
                           <Plus className="h-3 w-3" />
@@ -441,10 +445,10 @@ export default function PosInterface() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50 ml-4"
+                          className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
                           onClick={() => removeItem(item.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                           <span className="sr-only">Remove</span>
                         </Button>
                       </div>
@@ -454,63 +458,15 @@ export default function PosInterface() {
               )}
             </div>
 
-            {/* Therapist Selection (only for Manager) */}
-            {user?.role === "manager" && (
-              <div className="mt-2 mb-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Therapist</Label>
-                  {selectedTherapist && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 text-xs text-gray-500"
-                      onClick={() => setSelectedTherapist(null)}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-                <div className="mt-1">
-                  {selectedTherapist ? (
-                    <div className="flex items-center justify-between p-2 bg-pink-50 rounded-md">
-                      <div className="flex items-center">
-                        <UserCheck className="h-4 w-4 mr-2 text-pink-600" />
-                        <span className="font-medium">
-                          {selectedTherapist.name}
-                        </span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => setShowTherapistSelector(true)}
-                      >
-                        Change
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-muted-foreground"
-                      onClick={() => setShowTherapistSelector(true)}
-                    >
-                      <UserCheck className="mr-2 h-4 w-4" />
-                      Select Therapist
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Customer Selection */}
-            <div className="mt-2 mb-2">
+            <div className="mt-2">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Customer</Label>
+                <Label className="text-xs font-medium">Customer</Label>
                 {selectedCustomer && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 text-xs text-gray-500"
+                    className="h-5 text-xs text-gray-500"
                     onClick={() => setSelectedCustomer(null)}
                   >
                     Clear
@@ -519,17 +475,17 @@ export default function PosInterface() {
               </div>
               <div className="mt-1">
                 {selectedCustomer ? (
-                  <div className="flex items-center justify-between p-2 bg-pink-50 rounded-md">
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-2 text-pink-600" />
-                      <span className="font-medium">
+                  <div className="flex items-center justify-between p-1.5 bg-pink-50 rounded-md">
+                    <div className="flex items-center min-w-0">
+                      <User className="h-3.5 w-3.5 mr-1.5 text-pink-600 flex-shrink-0" />
+                      <span className="font-medium text-sm truncate">
                         {selectedCustomer.name}
                       </span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-6 text-xs ml-2 flex-shrink-0"
                       onClick={() => setShowCustomerSelector(true)}
                     >
                       Change
@@ -538,10 +494,10 @@ export default function PosInterface() {
                 ) : (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-muted-foreground"
+                    className="w-full justify-start text-muted-foreground h-8 text-sm"
                     onClick={() => setShowCustomerSelector(true)}
                   >
-                    <Users className="mr-2 h-4 w-4" />
+                    <Users className="mr-1.5 h-3.5 w-3.5" />
                     Select Customer
                   </Button>
                 )}
@@ -550,40 +506,40 @@ export default function PosInterface() {
 
             {/* Discount Options */}
             {cart.length > 0 && !showPaymentOptions && (
-              <div className="mt-1 mb-2">
+              <div className="mt-2">
                 {!showDiscountOptions && discountType === "none" ? (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full text-pink-600 border-pink-200"
+                    className="w-full text-pink-600 border-pink-200 h-8 text-sm"
                     onClick={() => setShowDiscountOptions(true)}
                   >
-                    <Percent className="mr-2 h-4 w-4" />
+                    <Percent className="mr-1.5 h-3.5 w-3.5" />
                     Add Discount or Voucher
                   </Button>
                 ) : (
                   showDiscountOptions && (
-                    <div className="space-y-3 p-3 bg-pink-50 rounded-md">
+                    <div className="space-y-2 p-2 bg-pink-50 rounded-md">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-medium text-pink-800">
+                        <h4 className="text-xs font-medium text-pink-800">
                           Apply Discount
                         </h4>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-gray-400"
+                          className="h-5 w-5 text-gray-400"
                           onClick={() => setShowDiscountOptions(false)}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-3 w-3" />
                           <span className="sr-only">Close</span>
                         </Button>
                       </div>
 
-                      <div className="grid gap-2">
+                      <div className="grid gap-1.5">
                         <div className="flex items-center justify-between">
                           <Label
                             htmlFor="discount-percentage"
-                            className="text-sm"
+                            className="text-xs"
                           >
                             Percentage Discount
                           </Label>
@@ -602,8 +558,8 @@ export default function PosInterface() {
                                 className={
                                   discountPercentage === percent &&
                                   discountType === "percentage"
-                                    ? "h-7 min-w-[40px] bg-pink-600 hover:bg-pink-700"
-                                    : "h-7 min-w-[40px] border-pink-200"
+                                    ? "h-6 min-w-[36px] bg-pink-600 hover:bg-pink-700 text-xs"
+                                    : "h-6 min-w-[36px] border-pink-200 text-xs"
                                 }
                                 onClick={() => {
                                   setDiscountPercentage(
@@ -619,17 +575,17 @@ export default function PosInterface() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-2 pt-2 border-t border-pink-100">
-                          <Label htmlFor="voucher-code" className="text-sm">
+                        <div className="flex flex-col gap-1.5 pt-1.5 border-t border-pink-100">
+                          <Label htmlFor="voucher-code" className="text-xs">
                             Voucher Code
                           </Label>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-1.5">
                             <Input
                               id="voucher-code"
                               placeholder="Enter code"
                               value={voucherCode}
                               onChange={(e) => setVoucherCode(e.target.value)}
-                              className="border-pink-200"
+                              className="border-pink-200 h-8 text-sm"
                             />
                             <Input
                               id="voucher-amount"
@@ -639,12 +595,12 @@ export default function PosInterface() {
                               step="0.01"
                               value={voucherAmount}
                               onChange={(e) => setVoucherAmount(e.target.value)}
-                              className="border-pink-200"
+                              className="border-pink-200 h-8 text-sm"
                             />
                           </div>
                           <Button
                             size="sm"
-                            className="mt-1 bg-pink-600 hover:bg-pink-700"
+                            className="mt-1 bg-pink-600 hover:bg-pink-700 h-8 text-sm"
                             onClick={applyVoucher}
                           >
                             Apply Voucher
@@ -660,14 +616,14 @@ export default function PosInterface() {
             {/* Total */}
             <div className="mt-auto">
               {cart.length > 0 && (
-                <div className="flex justify-between font-medium text-lg pt-2 border-t border-pink-100">
+                <div className="flex justify-between font-medium text-base pt-2 border-t border-pink-100">
                   <span>Total</span>
                   <span>£{total.toFixed(2)}</span>
                 </div>
               )}
 
               {discountType !== "none" && (
-                <div className="flex justify-between text-sm text-pink-600 mt-1">
+                <div className="flex justify-between text-xs text-pink-600 mt-1">
                   <span className="flex items-center">
                     {discountType === "percentage" ? (
                       <>
@@ -683,10 +639,10 @@ export default function PosInterface() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 ml-1 text-gray-400 hover:text-red-500"
+                      className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
                       onClick={removeDiscount}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                       <span className="sr-only">Remove discount</span>
                     </Button>
                   </span>
@@ -695,26 +651,26 @@ export default function PosInterface() {
               )}
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-3">
             {showPaymentOptions ? (
-              <div className="w-full space-y-3">
+              <div className="w-full space-y-2">
                 <Button
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
                   onClick={() => handlePayment("Card")}
                 >
-                  <CreditCard className="mr-2 h-4 w-4" />
+                  <CreditCard className="mr-1.5 h-4 w-4" />
                   Pay with Card
                 </Button>
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-sm"
                   onClick={() => handlePayment("Cash")}
                 >
-                  <Banknote className="mr-2 h-4 w-4" />
+                  <Banknote className="mr-1.5 h-4 w-4" />
                   Pay with Cash
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full h-9 text-sm"
                   onClick={() => setShowPaymentOptions(false)}
                 >
                   Back to Cart
@@ -722,11 +678,11 @@ export default function PosInterface() {
               </div>
             ) : (
               <Button
-                className="w-full bg-pink-600 hover:bg-pink-700"
+                className="w-full bg-pink-600 hover:bg-pink-700 h-9 text-sm"
                 disabled={cart.length === 0}
                 onClick={handleCheckout}
               >
-                <Receipt className="mr-2 h-4 w-4" />
+                <Receipt className="mr-1.5 h-4 w-4" />
                 Checkout
               </Button>
             )}

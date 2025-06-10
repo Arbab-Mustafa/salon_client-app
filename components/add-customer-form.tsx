@@ -102,80 +102,88 @@ export function AddCustomerForm({ onSuccess, onCancel }: AddCustomerFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Add New Customer</h2>
+    <div className="bg-white rounded-lg shadow-lg w-[30rem]  flex flex-col">
+      <div className="p-3 border-b flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Add New Customer</h2>
         <Button
           variant="ghost"
           size="icon"
           onClick={onCancel}
-          className="h-8 w-8"
+          className="h-7 w-7"
         >
           <X className="h-4 w-4" />
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 flex-1 overflow-y-auto">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
+      <form onSubmit={handleSubmit} className="p-3 flex-1 overflow-y-auto">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName" className="text-sm">
+                First Name *
+              </Label>
               <Input
                 id="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 onFocus={() => setActiveField("firstName")}
-                className="border-pink-200"
+                className="border-pink-200 h-9"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName" className="text-sm">
+                Last Name
+              </Label>
               <Input
                 id="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 onFocus={() => setActiveField("lastName")}
-                className="border-pink-200"
+                className="border-pink-200 h-9"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="mobile">Mobile Number *</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="mobile" className="text-sm">
+              Mobile Number *
+            </Label>
             <Input
               id="mobile"
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
               onFocus={() => setActiveField("mobile")}
-              className="border-pink-200"
+              className="border-pink-200 h-9"
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-sm">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setActiveField("email")}
-              className="border-pink-200"
+              className="border-pink-200 h-9"
             />
           </div>
         </div>
 
         {activeField && (
-          <div className="mt-4 border-t pt-4">
+          <div className="mt-3 border-t pt-3">
             <OnScreenKeyboard onKeyPress={handleKeyPress} />
           </div>
         )}
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-4 flex gap-2">
           <Button
             type="submit"
-            className="flex-1 bg-pink-600 hover:bg-pink-700"
+            className="flex-1 bg-pink-600 hover:bg-pink-700 h-9"
           >
             Add Customer
           </Button>
@@ -183,7 +191,7 @@ export function AddCustomerForm({ onSuccess, onCancel }: AddCustomerFormProps) {
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="flex-1"
+            className="flex-1 h-9"
           >
             Cancel
           </Button>

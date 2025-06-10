@@ -13,7 +13,7 @@ export default function UsersPage() {
     <ProtectedRoute allowedRoles={["owner"]}>
       <div className="min-h-screen bg-pink-200">
         <DashboardHeader />
-        <main className="container mx-auto p-4 pt-24">
+        <main className="container mx-auto p-4 pt-20">
           <h1 className="text-2xl font-bold text-pink-800 mb-6">
             User Management
           </h1>

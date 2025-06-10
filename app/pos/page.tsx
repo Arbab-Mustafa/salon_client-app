@@ -14,7 +14,7 @@ export default function POSPage() {
     <ProtectedRoute allowedRoles={["owner", "therapist", "manager"]}>
       <div className="min-h-screen bg-pink-200">
         <DashboardHeader />
-        <main className="container mx-auto p-4 pt-24">
+        <main className="container mx-auto p-4 pt-18">
           <POSInterface />
         </main>
       </div>

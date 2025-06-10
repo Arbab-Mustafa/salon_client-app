@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 import {
   Dialog,
   DialogContent,
@@ -88,10 +89,44 @@ export default function CustomerManagement() {
   const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">(
     "all"
   );
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeField, setActiveField] = useState<
+    "name" | "mobile" | "email" | "notes" | null
+  >(null);
 
   const resetForm = () => {
     setFormData(initialFormData);
     setFormErrors({});
+    setShowKeyboard(false);
+    setActiveField(null);
+  };
+
+  const handleKeyPress = (key: string) => {
+    if (!activeField) return;
+
+    const updateField = (field: string, setter: (value: string) => void) => {
+      if (key === "backspace") {
+        setter(field.slice(0, -1));
+      } else if (key === "space") {
+        setter(field + " ");
+      } else if (key === "clear") {
+        setter("");
+      } else {
+        // For mobile field, only allow numbers and spaces
+        if (activeField === "mobile" && !/^[0-9\s]$/.test(key)) {
+          return;
+        }
+        setter(field + key);
+      }
+    };
+
+    const currentValue = formData[activeField];
+    updateField(currentValue, (newValue) => {
+      setFormData((prev) => ({
+        ...prev,
+        [activeField]: newValue,
+      }));
+    });
   };
 
   const handleInputChange = (
@@ -291,14 +326,14 @@ export default function CustomerManagement() {
               Add New Customer
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Add New Customer</DialogTitle>
               <DialogDescription>
                 Create a new customer record.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
               <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -306,7 +341,10 @@ export default function CustomerManagement() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className={formErrors.name ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("name")}
+                  className={
+                    formErrors.name ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.name && (
                   <p className="text-xs text-red-500">{formErrors.name}</p>
@@ -319,7 +357,10 @@ export default function CustomerManagement() {
                   name="mobile"
                   value={formData.mobile}
                   onChange={handleInputChange}
-                  className={formErrors.mobile ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("mobile")}
+                  className={
+                    formErrors.mobile ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.mobile && (
                   <p className="text-xs text-red-500">{formErrors.mobile}</p>
@@ -333,7 +374,10 @@ export default function CustomerManagement() {
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={formErrors.email ? "border-red-500" : ""}
+                  onFocus={() => setActiveField("email")}
+                  className={
+                    formErrors.email ? "border-red-500" : "border-pink-200"
+                  }
                 />
                 {formErrors.email && (
                   <p className="text-xs text-red-500">{formErrors.email}</p>
@@ -346,7 +390,8 @@ export default function CustomerManagement() {
                   name="notes"
                   value={formData.notes}
                   onChange={handleInputChange}
-                  className="resize-none"
+                  onFocus={() => setActiveField("notes")}
+                  className="resize-none border-pink-200"
                   rows={3}
                 />
               </div>
@@ -358,6 +403,25 @@ export default function CustomerManagement() {
                 />
                 <Label htmlFor="active">Active Customer</Label>
               </div>
+
+              {/* Keyboard Toggle Button */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={showKeyboard ? "default" : "outline"}
+                  className="flex-1 border-pink-200"
+                  onClick={() => setShowKeyboard(!showKeyboard)}
+                >
+                  {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                </Button>
+              </div>
+
+              {/* On-Screen Keyboard */}
+              {showKeyboard && (
+                <div className="mt-3 border-t pt-3">
+                  <OnScreenKeyboard onKeyPress={handleKeyPress} />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
@@ -438,12 +502,12 @@ export default function CustomerManagement() {
 
       {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>Update customer information.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
             <div className="grid gap-2">
               <Label htmlFor="edit-name">Full Name</Label>
               <Input
@@ -451,7 +515,10 @@ export default function CustomerManagement() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={formErrors.name ? "border-red-500" : ""}
+                onFocus={() => setActiveField("name")}
+                className={
+                  formErrors.name ? "border-red-500" : "border-pink-200"
+                }
               />
               {formErrors.name && (
                 <p className="text-xs text-red-500">{formErrors.name}</p>
@@ -464,7 +531,10 @@ export default function CustomerManagement() {
                 name="mobile"
                 value={formData.mobile}
                 onChange={handleInputChange}
-                className={formErrors.mobile ? "border-red-500" : ""}
+                onFocus={() => setActiveField("mobile")}
+                className={
+                  formErrors.mobile ? "border-red-500" : "border-pink-200"
+                }
               />
               {formErrors.mobile && (
                 <p className="text-xs text-red-500">{formErrors.mobile}</p>
@@ -478,7 +548,10 @@ export default function CustomerManagement() {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={formErrors.email ? "border-red-500" : ""}
+                onFocus={() => setActiveField("email")}
+                className={
+                  formErrors.email ? "border-red-500" : "border-pink-200"
+                }
               />
               {formErrors.email && (
                 <p className="text-xs text-red-500">{formErrors.email}</p>
@@ -491,7 +564,8 @@ export default function CustomerManagement() {
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
-                className="resize-none"
+                onFocus={() => setActiveField("notes")}
+                className="resize-none border-pink-200"
                 rows={3}
               />
             </div>
@@ -503,6 +577,25 @@ export default function CustomerManagement() {
               />
               <Label htmlFor="edit-active">Active Customer</Label>
             </div>
+
+            {/* Keyboard Toggle Button */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={showKeyboard ? "default" : "outline"}
+                className="flex-1 border-pink-200"
+                onClick={() => setShowKeyboard(!showKeyboard)}
+              >
+                {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+              </Button>
+            </div>
+
+            {/* On-Screen Keyboard */}
+            {showKeyboard && (
+              <div className="mt-3 border-t pt-3">
+                <OnScreenKeyboard onKeyPress={handleKeyPress} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
