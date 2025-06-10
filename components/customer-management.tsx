@@ -48,6 +48,7 @@ import {
   ClipboardCheck,
   Eye,
   Mail,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -70,21 +71,18 @@ const initialFormData: CustomerFormData = {
 };
 
 export default function CustomerManagement() {
-  const {
-    customers,
-    addCustomer,
-    updateCustomer,
-    deleteCustomer,
-    generateConsultationFormLink,
-  } = useCustomers();
+  const { customers, addCustomer, updateCustomer, deleteCustomer } =
+    useCustomers();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [formData, setFormData] = useState<CustomerFormData>(initialFormData);
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
     null
   );
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [formErrors, setFormErrors] = useState<Partial<CustomerFormData>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "active" | "inactive">(
@@ -204,9 +202,56 @@ export default function CustomerManagement() {
   };
 
   const sendConsultationFormEmail = (customer: Customer) => {
-    // In a real app, this would send an email
-    // For this demo, we'll just show a toast
-    toast.success(`Consultation form link sent to ${customer.email}`);
+    const formLink = `${window.location.origin}/consultation-form/${customer.id}`;
+    const subject = encodeURIComponent(
+      `Your Consultation Form - ${customer.name}`
+    );
+    const body = encodeURIComponent(
+      `Dear ${customer.name},\n\n` +
+        `Thank you for choosing our services. To ensure we provide you with the best possible care, we need you to complete two important forms:\n\n` +
+        `1. Consultation Form:\n` +
+        `This form helps us understand your skin type, concerns, medical history, and preferences. This information is crucial for us to customize your treatment plan and ensure your safety.\n\n` +
+        `2. Health & Safety Form:\n` +
+        `For your safety and the safety of our staff, please also complete our Health & Safety and Allergies form:\n` +
+        `https://docs.google.com/forms/d/e/1FAIpQLSfazPqYTUx06tVCnhQRjXD_nVk29xd8xevTBoz9RCFkpDHdSg/viewform?usp=send_form\n\n` +
+        `Please complete both forms before your appointment. This will help us:\n` +
+        `• Understand your specific needs and concerns\n` +
+        `• Ensure your safety during treatments\n` +
+        `• Provide personalized recommendations\n` +
+        `• Prepare for your visit efficiently\n\n` +
+        `If you have any questions or need assistance, please don't hesitate to contact us.\n\n` +
+        `Best regards,\n` +
+        `Your Beauty Team`
+    );
+
+    const mailtoLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(customer.email)}&su=${subject}&body=${body}`;
+    window.open(mailtoLink, "_blank");
+
+    // Update the last consultation form date
+    updateCustomer(customer.id, {
+      lastConsultationFormDate: new Date(),
+    });
+  };
+
+  const openDatePicker = (customerId: string, currentDate?: Date) => {
+    setCurrentCustomerId(customerId);
+    setSelectedDate(currentDate || new Date());
+    setIsDatePickerOpen(true);
+  };
+
+  const updateConsultationDate = async () => {
+    if (!currentCustomerId) return;
+
+    try {
+      await updateCustomer(currentCustomerId, {
+        lastConsultationFormDate: selectedDate,
+      });
+      toast.success("Last consultation date updated successfully");
+      setIsDatePickerOpen(false);
+      setCurrentCustomerId(null);
+    } catch (error) {
+      toast.error("Failed to update consultation date");
+    }
   };
 
   // Filter customers based on search query and active tab
@@ -670,6 +715,45 @@ export default function CustomerManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Date Picker Dialog */}
+      <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Update Last Consultation Date</DialogTitle>
+            <DialogDescription>
+              Select the date for the last consultation form.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="consultation-date">Consultation Date</Label>
+              <input
+                id="consultation-date"
+                type="date"
+                value={selectedDate.toISOString().split("T")[0]}
+                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Select consultation date"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDatePickerOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-pink-600 hover:bg-pink-700"
+              onClick={updateConsultationDate}
+            >
+              Update Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -689,101 +773,203 @@ function CustomerTable({
   onView,
   onSendForm,
 }: CustomerTableProps) {
+  const { updateLastConsultationFormDate } = useCustomers();
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(
+    null
+  );
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const openDatePicker = (customerId: string, currentDate?: Date) => {
+    setCurrentCustomerId(customerId);
+    setSelectedDate(currentDate || new Date());
+    setIsDatePickerOpen(true);
+  };
+
+  const updateConsultationDate = async () => {
+    if (!currentCustomerId) return;
+
+    try {
+      await updateLastConsultationFormDate(currentCustomerId, selectedDate);
+      toast.success("Last consultation date updated successfully");
+      setIsDatePickerOpen(false);
+      setCurrentCustomerId(null);
+    } catch (error) {
+      toast.error("Failed to update consultation date");
+      console.error("Error updating consultation date:", error);
+    }
+  };
+
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date) return "Never";
+    try {
+      return new Date(date).toLocaleDateString();
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  };
+
   return (
-    <Card className="border-pink-200">
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Mobile</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Last Visit</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {customers.length === 0 ? (
+    <>
+      <Card className="border-pink-200">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center py-4 text-muted-foreground"
-                >
-                  No customers found.
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Last Visit</TableHead>
+                <TableHead>Last Consultation</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              customers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.mobile}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {customer.email}
-                  </TableCell>
-                  <TableCell>
-                    {customer.lastVisit
-                      ? new Date(customer.lastVisit).toLocaleDateString(
-                          "en-GB",
-                          {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          }
-                        )
-                      : "Never"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={customer.active ? "default" : "outline"}
-                      className={
-                        customer.active
-                          ? "bg-green-100 text-green-800 hover:bg-green-100"
-                          : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                      }
-                    >
-                      {customer.active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onView(customer)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onEdit(customer)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onSendForm(customer)}>
-                          <FileText className="mr-2 h-4 w-4" />
-                          Send Consultation Form
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onDelete(customer.id)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            </TableHeader>
+            <TableBody>
+              {customers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">
+                    No customers found
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ) : (
+                customers.map((customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">
+                      {customer.name}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-sm">{customer.mobile}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {customer.email}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(customer.lastVisit)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {formatDate(customer.lastConsultationFormDate)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            openDatePicker(
+                              customer.id,
+                              customer.lastConsultationFormDate
+                                ? new Date(customer.lastConsultationFormDate)
+                                : undefined
+                            )
+                          }
+                        >
+                          <Calendar className="h-3 w-3" />
+                          <span className="sr-only">
+                            Update consultation date
+                          </span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={customer.active ? "default" : "outline"}
+                        className={
+                          customer.active
+                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                            : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                        }
+                      >
+                        {customer.active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => onView(customer)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onEdit(customer)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onSendForm(customer)}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Send Consultation Form
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDelete(customer.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Date Picker Dialog */}
+      <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Update Last Consultation Date</DialogTitle>
+            <DialogDescription>
+              Select the date for the last consultation form.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="consultation-date">Consultation Date</Label>
+              <input
+                id="consultation-date"
+                type="date"
+                value={selectedDate.toISOString().split("T")[0]}
+                onChange={(e) => {
+                  const newDate = new Date(e.target.value);
+                  if (!isNaN(newDate.getTime())) {
+                    setSelectedDate(newDate);
+                  }
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Select consultation date"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDatePickerOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-pink-600 hover:bg-pink-700"
+              onClick={updateConsultationDate}
+            >
+              Update Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

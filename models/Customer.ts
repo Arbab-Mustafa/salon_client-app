@@ -42,6 +42,10 @@ const customerSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  lastConsultationFormDate: {
+    type: Date,
+    default: null,
+  },
 });
 
 // Update the updatedAt timestamp before saving

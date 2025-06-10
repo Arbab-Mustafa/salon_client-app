@@ -19,7 +19,7 @@ import type { ConsultationForm } from "@/types/customer"
 export default function ConsultationFormPage() {
   const params = useParams()
   const customerId = params.customerId as string
-  const { getCustomerById, updateCustomerConsultationForm } = useCustomer()
+  const { getCustomerById, updateCustomerConsultationForm, updateLastConsultationFormDate } = useCustomer()
   const customer = getCustomerById(customerId)
   const router = useRouter()
 
@@ -63,28 +63,67 @@ export default function ConsultationFormPage() {
     completedAt: null,
   })
 
+  const [consent, setConsent] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   useEffect(() => {
     if (customer?.consultationForm) {
       setForm(customer.consultationForm)
     }
   }, [customer])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!form.consentToTreatment) {
-      toast.error("You must consent to treatment to submit the form")
+    if (!consent) {
+      toast.error("Please provide consent before submitting")
       return
     }
 
-    const updatedForm = {
-      ...form,
-      completedAt: new Date(),
-    }
+    try {
+      setIsSubmitting(true)
+      const updatedForm = {
+        ...form,
+        completedAt: new Date(),
+        answers: {
+          ...form.answers,
+          consent: true,
+          consentDate: new Date().toISOString(),
+        },
+      }
 
-    updateCustomerConsultationForm(customerId, updatedForm)
-    toast.success("Consultation form submitted successfully")
-    router.push("/consultation-form/thank-you")
+      // Create a new consultation form
+      const response = await fetch("/api/consultation-forms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerId,
+          answers: updatedForm.answers,
+          completedAt: updatedForm.completedAt,
+          notes: updatedForm.notes,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to submit form")
+      }
+
+      const savedForm = await response.json()
+      console.log("Form submitted successfully:", savedForm)
+
+      // The customer's lastConsultationFormDate will be updated automatically
+      // by the post-save hook in the ConsultationForm model
+
+      toast.success("Form submitted successfully")
+      router.push("/consultation-form/thank-you")
+    } catch (error: any) {
+      console.error("Error submitting form:", error)
+      toast.error(error.message || "Failed to submit form")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (!customer) {
@@ -618,7 +657,9 @@ export default function ConsultationFormPage() {
               <Button variant="outline" type="button" onClick={() => router.back()}>
                 Cancel
               </Button>
-              <Button type="submit">Submit</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                Submit
+              </Button>
             </CardFooter>
           </form>
         </Card>
@@ -626,3 +667,4 @@ export default function ConsultationFormPage() {
     </ProtectedRoute>
   )
 }
+

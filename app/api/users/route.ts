@@ -181,8 +181,8 @@ export async function PATCH(request: Request) {
       id,
       { $set: update },
       {
-        new: true,
-        runValidators: true,
+      new: true,
+      runValidators: true,
       }
     );
 

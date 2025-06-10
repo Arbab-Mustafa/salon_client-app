@@ -7,6 +7,7 @@ export interface Customer {
   createdAt: Date;
   updatedAt: Date;
   lastVisit?: Date;
+  lastConsultationFormDate?: Date;
   consultationFormId?: string;
   notes?: string;
   active: boolean;

@@ -22,6 +22,7 @@ interface CustomerContextType {
   ) => Promise<void>;
   deleteConsultationForm: (id: string) => Promise<void>;
   updateLastVisit: (id: string, lastVisit?: Date) => Promise<void>;
+  updateLastConsultationFormDate: (id: string, date?: Date) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -39,13 +40,19 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // Helper to map _id to id
-  const mapCustomer = (c: any): Customer => ({
-    ...c,
-    id: c._id || c.id,
-    phone: c.phone || c.mobile || "",
-    mobile: c.mobile || c.phone || "",
-    active: c.active !== undefined ? c.active : true,
-  });
+  const mapCustomer = (c: any): Customer => {
+    const mapped = {
+      ...c,
+      id: c._id || c.id,
+      phone: c.phone || c.mobile || "",
+      mobile: c.mobile || c.phone || "",
+      active: c.active !== undefined ? c.active : true,
+      lastConsultationFormDate:
+        c.lastConsultationFormDate || c.lastConsentFormDate || null,
+    };
+    console.log("Mapped customer data:", mapped);
+    return mapped;
+  };
   const mapForm = (f: any): ConsultationForm => ({ ...f, id: f._id || f.id });
 
   // Load data from MongoDB on mount
@@ -243,6 +250,70 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateLastConsultationFormDate = async (id: string, date?: Date) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      console.log(
+        "Updating consultation date for customer",
+        id,
+        "with date:",
+        date
+      );
+
+      // Ensure we have a valid date
+      const dateToSend = date ? new Date(date) : new Date();
+      if (isNaN(dateToSend.getTime())) {
+        throw new Error("Invalid date provided");
+      }
+
+      // First check if the customer exists and get current data
+      const checkResponse = await fetch(`/api/customers/${id}`);
+      if (!checkResponse.ok) {
+        throw new Error("Customer not found");
+      }
+      const currentCustomer = await checkResponse.json();
+      console.log("Current customer data:", currentCustomer);
+
+      const response = await fetch(`/api/customers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lastConsultationFormDate: dateToSend.toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to update consultation date:", errorData);
+        throw new Error(
+          errorData.error || "Failed to update last consultation form date"
+        );
+      }
+
+      const updatedCustomer = await response.json();
+      console.log("Successfully updated customer:", updatedCustomer);
+
+      // Verify the update
+      if (!updatedCustomer.lastConsultationFormDate) {
+        console.warn(
+          "Warning: lastConsultationFormDate not set in response:",
+          updatedCustomer
+        );
+      }
+
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === id ? mapCustomer(updatedCustomer) : c))
+      );
+    } catch (err: any) {
+      console.error("Error in updateLastConsultationFormDate:", err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <CustomerContext.Provider
       value={{
@@ -255,6 +326,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         addConsultationForm,
         updateConsultationForm,
         deleteConsultationForm,
+        updateLastConsultationFormDate,
         isLoading,
         error,
       }}

@@ -1,63 +1,97 @@
-import { NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
-import mongoose from "mongoose"
+import { NextResponse } from "next/server";
+import mongoose from "mongoose";
+import { connectToDatabase } from "@/lib/mongodb";
+import ConsultationForm from "@/models/ConsultationForm";
+import { getServerSession } from "next-auth";
+import Customer from "@/models/Customer";
+import User from "@/models/User";
 
-const consultationFormSchema = new mongoose.Schema(
-  {
-    customerId: {
-      type: String,
-      required: true,
-    },
-    answers: {
-      type: Map,
-      of: String,
-      default: {},
-    },
-    completedAt: Date,
-  },
-  {
-    timestamps: true,
-  }
-)
-
-const ConsultationForm = mongoose.models.ConsultationForm || mongoose.model("ConsultationForm", consultationFormSchema)
-
-export async function GET() {
+// GET all consultation forms
+export async function GET(req: Request) {
   try {
-    console.log("Connecting to MongoDB...")
-    await connectToDatabase()
-    
-    console.log("Fetching consultation forms...")
-    const forms = await ConsultationForm.find().sort({ createdAt: -1 })
-    console.log(`Found ${forms.length} consultation forms`)
-    
-    return NextResponse.json(forms)
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectToDatabase();
+    const forms = await ConsultationForm.find()
+      .populate("customer", "name email phone")
+      .populate("therapist", "name email role")
+      .populate("owner", "name email role")
+      .sort({ completedAt: -1 });
+
+    return NextResponse.json(forms);
   } catch (error: any) {
-    console.error("Error fetching consultation forms:", error)
+    console.error("Error fetching consultation forms:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch consultation forms" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function POST(request: Request) {
+// POST new consultation form
+export async function POST(req: Request) {
   try {
-    console.log("Connecting to MongoDB...")
-    await connectToDatabase()
-    
-    const data = await request.json()
-    console.log("Creating new consultation form with data:", data)
-    
-    const form = await ConsultationForm.create(data)
-    console.log("Consultation form created successfully:", form)
-    
-    return NextResponse.json(form, { status: 201 })
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const data = await req.json();
+    console.log("Received consultation form data:", data);
+
+    await connectToDatabase();
+
+    // Validate required fields
+    if (!data.customerId) {
+      return NextResponse.json(
+        { error: "Customer ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the current user (therapist) and owner
+    const [therapist, owner] = await Promise.all([
+      User.findOne({ email: session.user?.email }),
+      User.findOne({ role: "owner" }),
+    ]);
+
+    if (!therapist) {
+      return NextResponse.json(
+        { error: "Therapist not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!owner) {
+      return NextResponse.json({ error: "Owner not found" }, { status: 404 });
+    }
+
+    // Create the consultation form
+    const form = new ConsultationForm({
+      customer: new mongoose.Types.ObjectId(data.customerId),
+      therapist: therapist._id,
+      owner: owner._id,
+      answers: data.answers || {},
+      completedAt: data.completedAt || new Date(),
+      status: "completed",
+      notes: data.notes,
+    });
+
+    await form.save();
+    console.log("Saved consultation form:", form);
+
+    // The customer's lastConsultationFormDate will be updated automatically
+    // by the post-save hook in the ConsultationForm model
+
+    return NextResponse.json(form);
   } catch (error: any) {
-    console.error("Error creating consultation form:", error)
+    console.error("Error creating consultation form:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create consultation form" },
+      { error: error.message || "Internal server error" },
       { status: 500 }
-    )
+    );
   }
-} 
+}

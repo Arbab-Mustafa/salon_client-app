@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS customers (
   notes TEXT,
   active BOOLEAN DEFAULT true,
   last_visit TIMESTAMP WITH TIME ZONE,
+  last_consultation_form_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
