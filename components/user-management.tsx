@@ -446,6 +446,7 @@ export default function UserManagement() {
                                 : "border-pink-200 focus:border-pink-500"
                             }`}
                             placeholder="Enter password"
+                            style={{ height: "32px" }}
                           />
                           {formErrors.password && (
                             <p className="text-xs text-red-500 flex items-center mt-1">

@@ -326,107 +326,248 @@ export default function CustomerManagement() {
               Add New Customer
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+          <DialogContent className="sm:max-w-[1000px] max-h-[90vh] flex flex-col">
             <DialogHeader>
-              <DialogTitle>Add New Customer</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-bold text-pink-800">
+                Add New Customer
+              </DialogTitle>
+              <DialogDescription className="text-pink-600">
                 Create a new customer record.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("name")}
-                  className={
-                    formErrors.name ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.name && (
-                  <p className="text-xs text-red-500">{formErrors.name}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="mobile">Mobile Number</Label>
-                <Input
-                  id="mobile"
-                  name="mobile"
-                  value={formData.mobile}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("mobile")}
-                  className={
-                    formErrors.mobile ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.mobile && (
-                  <p className="text-xs text-red-500">{formErrors.mobile}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("email")}
-                  className={
-                    formErrors.email ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.email && (
-                  <p className="text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("notes")}
-                  className="resize-none border-pink-200"
-                  rows={3}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={formData.active}
-                  onCheckedChange={handleSwitchChange}
-                />
-                <Label htmlFor="active">Active Customer</Label>
-              </div>
+            <div className="flex-1 overflow-hidden py-4">
+              <div
+                className={`grid gap-6 h-full transition-all duration-300 ${showKeyboard ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
+              >
+                {/* Form Section */}
+                <div className="space-y-4 overflow-y-auto pr-2">
+                  <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-xl border border-pink-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Customer Details
+                      </h3>
 
-              {/* Keyboard Toggle Button */}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={showKeyboard ? "default" : "outline"}
-                  className="flex-1 border-pink-200"
-                  onClick={() => setShowKeyboard(!showKeyboard)}
-                >
-                  {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
-                </Button>
-              </div>
+                      {/* Keyboard Toggle Button */}
+                      <Button
+                        type="button"
+                        variant={showKeyboard ? "default" : "outline"}
+                        size="sm"
+                        className={`transition-all duration-200 text-xs ${
+                          showKeyboard
+                            ? "bg-pink-600 hover:bg-pink-700 text-white"
+                            : "border-pink-300 text-pink-600 hover:bg-pink-50"
+                        }`}
+                        onClick={() => setShowKeyboard(!showKeyboard)}
+                      >
+                        <span className="mr-1">⌨️</span>
+                        {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                      </Button>
+                    </div>
 
-              {/* On-Screen Keyboard */}
-              {showKeyboard && (
-                <div className="mt-3 border-t pt-3">
-                  <OnScreenKeyboard onKeyPress={handleKeyPress} />
+                    <div className="space-y-3">
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="name"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Full Name
+                        </Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("name")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.name
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="Enter full name"
+                        />
+                        {formErrors.name && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.name}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="mobile"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Mobile Number
+                        </Label>
+                        <Input
+                          id="mobile"
+                          name="mobile"
+                          value={formData.mobile}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("mobile")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.mobile
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="Enter mobile number"
+                        />
+                        {formErrors.mobile && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.mobile}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="email"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("email")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.email
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="Enter email address"
+                        />
+                        {formErrors.email && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.email}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="notes"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Notes (Optional)
+                        </Label>
+                        <Textarea
+                          id="notes"
+                          name="notes"
+                          value={formData.notes}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("notes")}
+                          className="resize-none border-pink-200 focus:border-pink-500 text-sm"
+                          rows={2}
+                          placeholder="Enter customer notes"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-pink-50 rounded-lg border border-pink-100">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="active"
+                            checked={formData.active}
+                            onCheckedChange={handleSwitchChange}
+                            className="data-[state=checked]:bg-green-500 scale-90"
+                          />
+                          <Label
+                            htmlFor="active"
+                            className={`font-medium transition-colors text-sm ${
+                              formData.active
+                                ? "text-green-700"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {formData.active
+                              ? "Active Customer"
+                              : "Inactive Customer"}
+                          </Label>
+                        </div>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            formData.active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {formData.active ? "✓ Enabled" : "✗ Disabled"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                {/* Keyboard Section - Only show when showKeyboard is true */}
+                {showKeyboard && (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-4 rounded-xl border border-pink-200 shadow-sm h-full flex flex-col">
+                      <div className="flex items-center justify-center mb-4">
+                        <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                          <span className="mr-2">⌨️</span>
+                          Virtual Keyboard
+                        </h3>
+                      </div>
+
+                      {activeField && (
+                        <div className="mb-3 p-2 bg-white rounded-lg border border-pink-200">
+                          <p className="text-sm text-pink-700">
+                            <span className="font-medium">Active Field:</span>{" "}
+                            {activeField.charAt(0).toUpperCase() +
+                              activeField.slice(1)}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full">
+                          <OnScreenKeyboard
+                            onKeyPress={(key) => {
+                              if (!activeField) return;
+                              const currentValue = formData[activeField] || "";
+                              let newValue = currentValue;
+
+                              if (key === "backspace") {
+                                newValue = currentValue.slice(0, -1);
+                              } else if (key === "space") {
+                                newValue = currentValue + " ";
+                              } else if (key === "clear") {
+                                newValue = "";
+                              } else {
+                                // For mobile field, only allow numbers and spaces
+                                if (
+                                  activeField === "mobile" &&
+                                  !/^[0-9\s]$/.test(key)
+                                )
+                                  return;
+                                newValue = currentValue + key;
+                              }
+
+                              setFormData((prev) => ({
+                                ...prev,
+                                [activeField]: newValue,
+                              }));
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setIsAddDialogOpen(false)}
+                className="border-pink-200 text-pink-600 hover:bg-pink-50"
               >
                 Cancel
               </Button>
@@ -502,105 +643,246 @@ export default function CustomerManagement() {
 
       {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[1000px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Customer</DialogTitle>
-            <DialogDescription>Update customer information.</DialogDescription>
+            <DialogTitle className="text-xl font-bold text-pink-800">
+              Edit Customer
+            </DialogTitle>
+            <DialogDescription className="text-pink-600">
+              Update customer information.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Full Name</Label>
-              <Input
-                id="edit-name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("name")}
-                className={
-                  formErrors.name ? "border-red-500" : "border-pink-200"
-                }
-              />
-              {formErrors.name && (
-                <p className="text-xs text-red-500">{formErrors.name}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-mobile">Mobile Number</Label>
-              <Input
-                id="edit-mobile"
-                name="mobile"
-                value={formData.mobile}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("mobile")}
-                className={
-                  formErrors.mobile ? "border-red-500" : "border-pink-200"
-                }
-              />
-              {formErrors.mobile && (
-                <p className="text-xs text-red-500">{formErrors.mobile}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("email")}
-                className={
-                  formErrors.email ? "border-red-500" : "border-pink-200"
-                }
-              />
-              {formErrors.email && (
-                <p className="text-xs text-red-500">{formErrors.email}</p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-notes">Notes (Optional)</Label>
-              <Textarea
-                id="edit-notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("notes")}
-                className="resize-none border-pink-200"
-                rows={3}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-active"
-                checked={formData.active}
-                onCheckedChange={handleSwitchChange}
-              />
-              <Label htmlFor="edit-active">Active Customer</Label>
-            </div>
+          <div className="flex-1 overflow-hidden py-4">
+            <div
+              className={`grid gap-6 h-full transition-all duration-300 ${showKeyboard ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
+            >
+              {/* Form Section */}
+              <div className="space-y-4 overflow-y-auto pr-2">
+                <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-xl border border-pink-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit Customer Details
+                    </h3>
 
-            {/* Keyboard Toggle Button */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={showKeyboard ? "default" : "outline"}
-                className="flex-1 border-pink-200"
-                onClick={() => setShowKeyboard(!showKeyboard)}
-              >
-                {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
-              </Button>
-            </div>
+                    {/* Keyboard Toggle Button */}
+                    <Button
+                      type="button"
+                      variant={showKeyboard ? "default" : "outline"}
+                      size="sm"
+                      className={`transition-all duration-200 text-xs ${
+                        showKeyboard
+                          ? "bg-pink-600 hover:bg-pink-700 text-white"
+                          : "border-pink-300 text-pink-600 hover:bg-pink-50"
+                      }`}
+                      onClick={() => setShowKeyboard(!showKeyboard)}
+                    >
+                      <span className="mr-1">⌨️</span>
+                      {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                    </Button>
+                  </div>
 
-            {/* On-Screen Keyboard */}
-            {showKeyboard && (
-              <div className="mt-3 border-t pt-3">
-                <OnScreenKeyboard onKeyPress={handleKeyPress} />
+                  <div className="space-y-3">
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-name"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Full Name
+                      </Label>
+                      <Input
+                        id="edit-name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("name")}
+                        className={`transition-all duration-200 h-8 text-sm ${
+                          formErrors.name
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-pink-200 focus:border-pink-500"
+                        }`}
+                        placeholder="Enter full name"
+                      />
+                      {formErrors.name && (
+                        <p className="text-xs text-red-500 flex items-center mt-1">
+                          <span className="mr-1">⚠️</span>
+                          {formErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-mobile"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Mobile Number
+                      </Label>
+                      <Input
+                        id="edit-mobile"
+                        name="mobile"
+                        value={formData.mobile}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("mobile")}
+                        className={`transition-all duration-200 h-8 text-sm ${
+                          formErrors.mobile
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-pink-200 focus:border-pink-500"
+                        }`}
+                        placeholder="Enter mobile number"
+                      />
+                      {formErrors.mobile && (
+                        <p className="text-xs text-red-500 flex items-center mt-1">
+                          <span className="mr-1">⚠️</span>
+                          {formErrors.mobile}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-email"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Email
+                      </Label>
+                      <Input
+                        id="edit-email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("email")}
+                        className={`transition-all duration-200 h-8 text-sm ${
+                          formErrors.email
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-pink-200 focus:border-pink-500"
+                        }`}
+                        placeholder="Enter email address"
+                      />
+                      {formErrors.email && (
+                        <p className="text-xs text-red-500 flex items-center mt-1">
+                          <span className="mr-1">⚠️</span>
+                          {formErrors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-notes"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Notes (Optional)
+                      </Label>
+                      <Textarea
+                        id="edit-notes"
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("notes")}
+                        className="resize-none border-pink-200 focus:border-pink-500 text-sm"
+                        rows={2}
+                        placeholder="Enter customer notes"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-pink-50 rounded-lg border border-pink-100">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-active"
+                          checked={formData.active}
+                          onCheckedChange={handleSwitchChange}
+                          className="data-[state=checked]:bg-green-500 scale-90"
+                        />
+                        <Label
+                          htmlFor="edit-active"
+                          className={`font-medium transition-colors text-sm ${
+                            formData.active ? "text-green-700" : "text-gray-500"
+                          }`}
+                        >
+                          {formData.active
+                            ? "Active Customer"
+                            : "Inactive Customer"}
+                        </Label>
+                      </div>
+                      <div
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          formData.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {formData.active ? "✓ Enabled" : "✗ Disabled"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Keyboard Section - Only show when showKeyboard is true */}
+              {showKeyboard && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-4 rounded-xl border border-pink-200 shadow-sm h-full flex flex-col">
+                    <div className="flex items-center justify-center mb-4">
+                      <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                        <span className="mr-2">⌨️</span>
+                        Virtual Keyboard
+                      </h3>
+                    </div>
+
+                    {activeField && (
+                      <div className="mb-3 p-2 bg-white rounded-lg border border-pink-200">
+                        <p className="text-sm text-pink-700">
+                          <span className="font-medium">Active Field:</span>{" "}
+                          {activeField.charAt(0).toUpperCase() +
+                            activeField.slice(1)}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="w-full">
+                        <OnScreenKeyboard
+                          onKeyPress={(key) => {
+                            if (!activeField) return;
+                            const currentValue = formData[activeField] || "";
+                            let newValue = currentValue;
+
+                            if (key === "backspace") {
+                              newValue = currentValue.slice(0, -1);
+                            } else if (key === "space") {
+                              newValue = currentValue + " ";
+                            } else if (key === "clear") {
+                              newValue = "";
+                            } else {
+                              // For mobile field, only allow numbers and spaces
+                              if (
+                                activeField === "mobile" &&
+                                !/^[0-9\s]$/.test(key)
+                              )
+                                return;
+                              newValue = currentValue + key;
+                            }
+
+                            setFormData((prev) => ({
+                              ...prev,
+                              [activeField]: newValue,
+                            }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
+              className="border-pink-200 text-pink-600 hover:bg-pink-50"
             >
               Cancel
             </Button>
@@ -1036,12 +1318,7 @@ function CustomerTable({
                 id="consultation-date"
                 type="date"
                 value={selectedDate.toISOString().split("T")[0]}
-                onChange={(e) => {
-                  const newDate = new Date(e.target.value);
-                  if (!isNaN(newDate.getTime())) {
-                    setSelectedDate(newDate);
-                  }
-                }}
+                onChange={(e) => setSelectedDate(new Date(e.target.value))}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Select consultation date"
               />

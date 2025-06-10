@@ -169,11 +169,8 @@ export default function ServiceManagement() {
 
     if (!formData.name.trim()) errors.name = "Name is required";
 
-    // Handle both string and number types for price
-    const priceValue =
-      typeof formData.price === "string"
-        ? formData.price.trim()
-        : formData.price.toString();
+    // Handle string type for price (already a string)
+    const priceValue = formData.price.trim();
     if (!priceValue || priceValue === "0") {
       errors.price = "Price is required";
     } else if (
@@ -183,17 +180,14 @@ export default function ServiceManagement() {
       errors.price = "Price must be a valid number";
     }
 
-    // Handle both string and number types for duration
+    // Handle string type for duration (already a string)
     if (formData.duration) {
-      const durationValue =
-        typeof formData.duration === "string"
-          ? formData.duration.trim()
-          : formData.duration.toString();
+      const durationValue = formData.duration.trim();
       if (
         isNaN(Number.parseInt(durationValue)) ||
         Number.parseInt(durationValue) <= 0
-    ) {
-      errors.duration = "Duration must be a valid number";
+      ) {
+        errors.duration = "Duration must be a valid number";
       }
     }
 
@@ -207,9 +201,9 @@ export default function ServiceManagement() {
     addService({
       name: formData.name,
       description: formData.description || undefined,
-      price: Number.parseFloat(formData.price),
+      price: Number.parseFloat(formData.price) || 0,
       duration: formData.duration
-        ? Number.parseInt(formData.duration)
+        ? Number.parseInt(formData.duration) || 0
         : undefined,
       category: formData.category,
       active: formData.active,
@@ -305,133 +299,289 @@ export default function ServiceManagement() {
               Add New Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+          <DialogContent className="sm:max-w-[1000px] max-h-[90vh] flex flex-col">
             <DialogHeader>
-              <DialogTitle>Add New Service or Product</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-bold text-pink-800">
+                Add New Service or Product
+              </DialogTitle>
+              <DialogDescription className="text-pink-600">
                 Create a new service or product for your salon.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Service Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("name")}
-                  className={
-                    formErrors.name ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.name && (
-                  <p className="text-xs text-red-500">{formErrors.name}</p>
+            <div className="flex-1 overflow-hidden py-4">
+              <div
+                className={`grid gap-6 h-full transition-all duration-300 ${showKeyboard ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
+              >
+                {/* Form Section */}
+                <div className="space-y-4 overflow-y-auto pr-2">
+                  <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-xl border border-pink-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Service Details
+                      </h3>
+
+                      {/* Keyboard Toggle Button */}
+                      <Button
+                        type="button"
+                        variant={showKeyboard ? "default" : "outline"}
+                        size="sm"
+                        className={`transition-all duration-200 text-xs ${
+                          showKeyboard
+                            ? "bg-pink-600 hover:bg-pink-700 text-white"
+                            : "border-pink-300 text-pink-600 hover:bg-pink-50"
+                        }`}
+                        onClick={() => setShowKeyboard(!showKeyboard)}
+                      >
+                        <span className="mr-1">⌨️</span>
+                        {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="name"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Service Name
+                        </Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("name")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.name
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="Enter service name"
+                        />
+                        {formErrors.name && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.name}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="description"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Description (Optional)
+                        </Label>
+                        <Textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("description")}
+                          className="resize-none border-pink-200 focus:border-pink-500 text-sm"
+                          rows={2}
+                          placeholder="Enter service description"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="price"
+                            className="text-pink-700 font-medium text-sm"
+                          >
+                            Price (£)
+                          </Label>
+                          <Input
+                            id="price"
+                            name="price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={formData.price}
+                            onChange={handleInputChange}
+                            onFocus={() => setActiveField("price")}
+                            className={`transition-all duration-200 h-8 text-sm ${
+                              formErrors.price
+                                ? "border-red-500 focus:border-red-500"
+                                : "border-pink-200 focus:border-pink-500"
+                            }`}
+                            placeholder="0.00"
+                          />
+                          {formErrors.price && (
+                            <p className="text-xs text-red-500 flex items-center mt-1">
+                              <span className="mr-1">⚠️</span>
+                              {formErrors.price}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid gap-1">
+                          <Label
+                            htmlFor="duration"
+                            className="text-pink-700 font-medium text-sm"
+                          >
+                            Duration (mins, optional)
+                          </Label>
+                          <Input
+                            id="duration"
+                            name="duration"
+                            type="number"
+                            min="1"
+                            value={formData.duration}
+                            onChange={handleInputChange}
+                            onFocus={() => setActiveField("duration")}
+                            className={`transition-all duration-200 h-8 text-sm ${
+                              formErrors.duration
+                                ? "border-red-500 focus:border-red-500"
+                                : "border-pink-200 focus:border-pink-500"
+                            }`}
+                            placeholder="30"
+                          />
+                          {formErrors.duration && (
+                            <p className="text-xs text-red-500 flex items-center mt-1">
+                              <span className="mr-1">⚠️</span>
+                              {formErrors.duration}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="category"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Category
+                        </Label>
+                        <Select
+                          value={formData.category}
+                          onValueChange={handleSelectChange}
+                        >
+                          <SelectTrigger className="border-pink-200 focus:border-pink-500 h-8 text-sm">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoryOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-pink-50 rounded-lg border border-pink-100">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="active"
+                            checked={formData.active}
+                            onCheckedChange={handleSwitchChange}
+                            className="data-[state=checked]:bg-green-500 scale-90"
+                          />
+                          <Label
+                            htmlFor="active"
+                            className={`font-medium transition-colors text-sm ${
+                              formData.active
+                                ? "text-green-700"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {formData.active
+                              ? "Active Service"
+                              : "Inactive Service"}
+                          </Label>
+                        </div>
+                        <div
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            formData.active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {formData.active ? "✓ Enabled" : "✗ Disabled"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keyboard Section - Only show when showKeyboard is true */}
+                {showKeyboard && (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-4 rounded-xl border border-pink-200 shadow-sm h-full flex flex-col">
+                      <div className="flex items-center justify-center mb-4">
+                        <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                          <span className="mr-2">⌨️</span>
+                          Virtual Keyboard
+                        </h3>
+                      </div>
+
+                      {activeField && (
+                        <div className="mb-3 p-2 bg-white rounded-lg border border-pink-200">
+                          <p className="text-sm text-pink-700">
+                            <span className="font-medium">Active Field:</span>{" "}
+                            {activeField.charAt(0).toUpperCase() +
+                              activeField.slice(1)}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full">
+                          <OnScreenKeyboard
+                            onKeyPress={(key) => {
+                              if (!activeField) return;
+                              const currentValue = String(
+                                formData[activeField] || ""
+                              );
+                              let newValue = currentValue;
+
+                              if (key === "backspace") {
+                                newValue = currentValue.slice(0, -1);
+                              } else if (key === "space") {
+                                newValue = currentValue + " ";
+                              } else if (key === "clear") {
+                                newValue = "";
+                              } else {
+                                if (
+                                  (activeField === "price" ||
+                                    activeField === "duration") &&
+                                  !/^[0-9.]$/.test(key)
+                                )
+                                  return;
+                                if (
+                                  activeField === "price" &&
+                                  key === "." &&
+                                  currentValue.includes(".")
+                                )
+                                  return;
+                                newValue = currentValue + key;
+                              }
+
+                              setFormData((prev) => ({
+                                ...prev,
+                                [activeField]: newValue,
+                              }));
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("description")}
-                  className="resize-none border-pink-200"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Price (£)</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    onFocus={() => setActiveField("price")}
-                    className={
-                      formErrors.price ? "border-red-500" : "border-pink-200"
-                    }
-                  />
-                  {formErrors.price && (
-                    <p className="text-xs text-red-500">{formErrors.price}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="duration">Duration (mins, optional)</Label>
-                  <Input
-                    id="duration"
-                    name="duration"
-                    type="number"
-                    min="1"
-                    value={formData.duration}
-                    onChange={handleInputChange}
-                    onFocus={() => setActiveField("duration")}
-                    className={
-                      formErrors.duration ? "border-red-500" : "border-pink-200"
-                    }
-                  />
-                  {formErrors.duration && (
-                    <p className="text-xs text-red-500">
-                      {formErrors.duration}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={handleSelectChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoryOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="active"
-                  checked={formData.active}
-                  onCheckedChange={handleSwitchChange}
-                />
-                <Label htmlFor="active">Active</Label>
-              </div>
-
-              {/* Keyboard Toggle Button */}
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={showKeyboard ? "default" : "outline"}
-                  className="flex-1 border-pink-200"
-                  onClick={() => setShowKeyboard(!showKeyboard)}
-                >
-                  {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
-                </Button>
-              </div>
-
-              {/* On-Screen Keyboard */}
-              {showKeyboard && (
-                <div className="mt-3 border-t pt-3">
-                  <OnScreenKeyboard onKeyPress={handleKeyPress} />
-                </div>
-              )}
             </div>
             <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => setIsAddDialogOpen(false)}
+                className="border-pink-200 text-pink-600 hover:bg-pink-50"
               >
                 Cancel
               </Button>
@@ -655,131 +805,284 @@ export default function ServiceManagement() {
 
       {/* Edit Service Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[1000px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-bold text-pink-800">
+              Edit Service
+            </DialogTitle>
+            <DialogDescription className="text-pink-600">
               Update service or product information.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 flex-1 overflow-y-auto">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Service Name</Label>
-              <Input
-                id="edit-name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("name")}
-                className={
-                  formErrors.name ? "border-red-500" : "border-pink-200"
-                }
-              />
-              {formErrors.name && (
-                <p className="text-xs text-red-500">{formErrors.name}</p>
+          <div className="flex-1 overflow-hidden py-4">
+            <div
+              className={`grid gap-6 h-full transition-all duration-300 ${showKeyboard ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
+            >
+              {/* Form Section */}
+              <div className="space-y-4 overflow-y-auto pr-2">
+                <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-xl border border-pink-200 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit Service Details
+                    </h3>
+
+                    {/* Keyboard Toggle Button */}
+                    <Button
+                      type="button"
+                      variant={showKeyboard ? "default" : "outline"}
+                      size="sm"
+                      className={`transition-all duration-200 text-xs ${
+                        showKeyboard
+                          ? "bg-pink-600 hover:bg-pink-700 text-white"
+                          : "border-pink-300 text-pink-600 hover:bg-pink-50"
+                      }`}
+                      onClick={() => setShowKeyboard(!showKeyboard)}
+                    >
+                      <span className="mr-1">⌨️</span>
+                      {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-name"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Service Name
+                      </Label>
+                      <Input
+                        id="edit-name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("name")}
+                        className={`transition-all duration-200 h-8 text-sm ${
+                          formErrors.name
+                            ? "border-red-500 focus:border-red-500"
+                            : "border-pink-200 focus:border-pink-500"
+                        }`}
+                        placeholder="Enter service name"
+                      />
+                      {formErrors.name && (
+                        <p className="text-xs text-red-500 flex items-center mt-1">
+                          <span className="mr-1">⚠️</span>
+                          {formErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-description"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Description (Optional)
+                      </Label>
+                      <Textarea
+                        id="edit-description"
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        onFocus={() => setActiveField("description")}
+                        className="resize-none border-pink-200 focus:border-pink-500 text-sm"
+                        rows={2}
+                        placeholder="Enter service description"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="edit-price"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Price (£)
+                        </Label>
+                        <Input
+                          id="edit-price"
+                          name="price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.price}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("price")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.price
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="0.00"
+                        />
+                        {formErrors.price && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.price}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid gap-1">
+                        <Label
+                          htmlFor="edit-duration"
+                          className="text-pink-700 font-medium text-sm"
+                        >
+                          Duration (mins, optional)
+                        </Label>
+                        <Input
+                          id="edit-duration"
+                          name="duration"
+                          type="number"
+                          min="1"
+                          value={formData.duration}
+                          onChange={handleInputChange}
+                          onFocus={() => setActiveField("duration")}
+                          className={`transition-all duration-200 h-8 text-sm ${
+                            formErrors.duration
+                              ? "border-red-500 focus:border-red-500"
+                              : "border-pink-200 focus:border-pink-500"
+                          }`}
+                          placeholder="30"
+                        />
+                        {formErrors.duration && (
+                          <p className="text-xs text-red-500 flex items-center mt-1">
+                            <span className="mr-1">⚠️</span>
+                            {formErrors.duration}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label
+                        htmlFor="edit-category"
+                        className="text-pink-700 font-medium text-sm"
+                      >
+                        Category
+                      </Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={handleSelectChange}
+                      >
+                        <SelectTrigger className="border-pink-200 focus:border-pink-500 h-8 text-sm">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-pink-50 rounded-lg border border-pink-100">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="edit-active"
+                          checked={formData.active}
+                          onCheckedChange={handleSwitchChange}
+                          className="data-[state=checked]:bg-green-500 scale-90"
+                        />
+                        <Label
+                          htmlFor="edit-active"
+                          className={`font-medium transition-colors text-sm ${
+                            formData.active ? "text-green-700" : "text-gray-500"
+                          }`}
+                        >
+                          {formData.active
+                            ? "Active Service"
+                            : "Inactive Service"}
+                        </Label>
+                      </div>
+                      <div
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          formData.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {formData.active ? "✓ Enabled" : "✗ Disabled"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Keyboard Section - Only show when showKeyboard is true */}
+              {showKeyboard && (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-4 rounded-xl border border-pink-200 shadow-sm h-full flex flex-col">
+                    <div className="flex items-center justify-center mb-4">
+                      <h3 className="text-base font-semibold text-pink-800 flex items-center">
+                        <span className="mr-2">⌨️</span>
+                        Virtual Keyboard
+                      </h3>
+                    </div>
+
+                    {activeField && (
+                      <div className="mb-3 p-2 bg-white rounded-lg border border-pink-200">
+                        <p className="text-sm text-pink-700">
+                          <span className="font-medium">Active Field:</span>{" "}
+                          {activeField.charAt(0).toUpperCase() +
+                            activeField.slice(1)}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="w-full">
+                        <OnScreenKeyboard
+                          onKeyPress={(key) => {
+                            if (!activeField) return;
+                            const currentValue = String(
+                              formData[activeField] || ""
+                            );
+                            let newValue = currentValue;
+
+                            if (key === "backspace") {
+                              newValue = currentValue.slice(0, -1);
+                            } else if (key === "space") {
+                              newValue = currentValue + " ";
+                            } else if (key === "clear") {
+                              newValue = "";
+                            } else {
+                              if (
+                                (activeField === "price" ||
+                                  activeField === "duration") &&
+                                !/^[0-9.]$/.test(key)
+                              )
+                                return;
+                              if (
+                                activeField === "price" &&
+                                key === "." &&
+                                currentValue.includes(".")
+                              )
+                                return;
+                              newValue = currentValue + key;
+                            }
+
+                            setFormData((prev) => ({
+                              ...prev,
+                              [activeField]: newValue,
+                            }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description (Optional)</Label>
-              <Textarea
-                id="edit-description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                onFocus={() => setActiveField("description")}
-                className="resize-none border-pink-200"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-price">Price (£)</Label>
-                <Input
-                  id="edit-price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("price")}
-                  className={
-                    formErrors.price ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.price && (
-                  <p className="text-xs text-red-500">{formErrors.price}</p>
-                )}
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-duration">Duration (mins, optional)</Label>
-                <Input
-                  id="edit-duration"
-                  name="duration"
-                  type="number"
-                  min="1"
-                  value={formData.duration}
-                  onChange={handleInputChange}
-                  onFocus={() => setActiveField("duration")}
-                  className={
-                    formErrors.duration ? "border-red-500" : "border-pink-200"
-                  }
-                />
-                {formErrors.duration && (
-                  <p className="text-xs text-red-500">{formErrors.duration}</p>
-                )}
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={handleSelectChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-active"
-                checked={formData.active}
-                onCheckedChange={handleSwitchChange}
-              />
-              <Label htmlFor="edit-active">Active</Label>
-            </div>
-
-            {/* Keyboard Toggle Button */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={showKeyboard ? "default" : "outline"}
-                className="flex-1 border-pink-200"
-                onClick={() => setShowKeyboard(!showKeyboard)}
-              >
-                {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
-              </Button>
-            </div>
-
-            {/* On-Screen Keyboard */}
-            {showKeyboard && (
-              <div className="mt-3 border-t pt-3">
-                <OnScreenKeyboard onKeyPress={handleKeyPress} />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
+              className="border-pink-200 text-pink-600 hover:bg-pink-50"
             >
               Cancel
             </Button>
@@ -787,7 +1090,7 @@ export default function ServiceManagement() {
               className="bg-pink-600 hover:bg-pink-700"
               onClick={handleEditService}
             >
-              Save Changes
+              Update Service
             </Button>
           </DialogFooter>
         </DialogContent>
