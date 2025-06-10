@@ -192,8 +192,8 @@ export default function ServiceManagement() {
       if (
         isNaN(Number.parseInt(durationValue)) ||
         Number.parseInt(durationValue) <= 0
-      ) {
-        errors.duration = "Duration must be a valid number";
+    ) {
+      errors.duration = "Duration must be a valid number";
       }
     }
 
