@@ -50,7 +50,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       lastConsultationFormDate:
         c.lastConsultationFormDate || c.lastConsentFormDate || null,
     };
-    console.log("Mapped customer data:", mapped);
+     
     return mapped;
   };
   const mapForm = (f: any): ConsultationForm => ({ ...f, id: f._id || f.id });
@@ -78,7 +78,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         setCustomers(customersData.map(mapCustomer));
         setConsultationForms(formsData.map(mapForm));
       } catch (error) {
-        console.error("Failed to load data:", error);
+        
         setError("Failed to load data");
       } finally {
         setIsLoading(false);
@@ -254,12 +254,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      console.log(
-        "Updating consultation date for customer",
-        id,
-        "with date:",
-        date
-      );
+      
 
       // Ensure we have a valid date
       const dateToSend = date ? new Date(date) : new Date();
@@ -273,7 +268,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         throw new Error("Customer not found");
       }
       const currentCustomer = await checkResponse.json();
-      console.log("Current customer data:", currentCustomer);
+     
 
       const response = await fetch(`/api/customers/${id}`, {
         method: "PATCH",
@@ -285,7 +280,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("Failed to update consultation date:", errorData);
+       
         throw new Error(
           errorData.error || "Failed to update last consultation form date"
         );
@@ -306,7 +301,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         prev.map((c) => (c.id === id ? mapCustomer(updatedCustomer) : c))
       );
     } catch (err: any) {
-      console.error("Error in updateLastConsultationFormDate:", err);
+       
       setError(err.message);
       throw err;
     } finally {

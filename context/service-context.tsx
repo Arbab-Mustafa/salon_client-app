@@ -75,32 +75,29 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
 
   const updateService = async (id: string, serviceData: Partial<Service>) => {
     setIsLoading(true);
-    console.log(
-      "[updateService] Sending PUT to /api/services/" + id,
-      serviceData
-    );
+    
     try {
       const response = await fetch(`/api/services/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(serviceData),
       });
-      console.log("[updateService] Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[updateService] Error:", errorData);
+      
         throw new Error(
           "Failed to update service: " + (errorData.error || response.status)
         );
       }
       const updatedService = await response.json();
-      console.log("[updateService] Updated service:", updatedService);
+       
       setServices((prev) =>
         prev.map((s) => (s._id === id ? updatedService : s))
       );
     } catch (err: any) {
       setError(err.message);
-      console.error("[updateService] Exception:", err);
+      
     } finally {
       setIsLoading(false);
     }
@@ -108,22 +105,22 @@ export function ServiceProvider({ children }: { children: React.ReactNode }) {
 
   const deleteService = async (id: string) => {
     setIsLoading(true);
-    console.log("[deleteService] Sending DELETE to /api/services/" + id);
+     
     try {
       const response = await fetch(`/api/services/${id}`, { method: "DELETE" });
-      console.log("[deleteService] Response status:", response.status);
+       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("[deleteService] Error:", errorData);
+         
         throw new Error(
           "Failed to delete service: " + (errorData.error || response.status)
         );
       }
       setServices((prev) => prev.filter((s) => s._id !== id));
-      console.log("[deleteService] Deleted service with id:", id);
+       
     } catch (err: any) {
       setError(err.message);
-      console.error("[deleteService] Exception:", err);
+       
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import Transaction from "@/models/Transaction";
 import type { TransactionData } from "@/data/reports-data";
 import type { Model } from "mongoose";
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
     // Ensure DB connection (for Mongoose, this is usually handled globally)
-    await clientPromise;
+    await connectToDatabase();
 
     // Parse dates
     const start = new Date(startDate);

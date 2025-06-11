@@ -128,14 +128,14 @@ export default function DashboardStats() {
           fetchSalesTotal(lastYearRange.start, lastYearRange.end),
         ]);
 
-        setTodaySales(todayData?.total || 0);
-        setYesterdaySales(yesterdayData?.total || 0);
-        setWeeklySales(weeklyData?.total || 0);
-        setLastWeekSales(lastWeekData?.total || 0);
-        setMonthlySales(monthlyData?.total || 0);
-        setLastMonthSales(lastMonthData?.total || 0);
-        setYearlySales(yearlyData?.total || 0);
-        setLastYearSales(lastYearData?.total || 0);
+        setTodaySales(todayData?.summary?.total || 0);
+        setYesterdaySales(yesterdayData?.summary?.total || 0);
+        setWeeklySales(weeklyData?.summary?.total || 0);
+        setLastWeekSales(lastWeekData?.summary?.total || 0);
+        setMonthlySales(monthlyData?.summary?.total || 0);
+        setLastMonthSales(lastMonthData?.summary?.total || 0);
+        setYearlySales(yearlyData?.summary?.total || 0);
+        setLastYearSales(lastYearData?.summary?.total || 0);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data");
