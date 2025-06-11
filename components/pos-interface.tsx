@@ -724,169 +724,233 @@ export default function PosInterface() {
                           </div>
                         </div>
                       </div>
-                      {/* On-Screen Keyboard for voucher fields */}
-                      {showKeyboard && (
-                        <div className="mt-2">
-                          <OnScreenKeyboard
-                            onKeyPress={(key) => {
-                              if (!activeKeyboardField) return;
-                              let currentValue =
-                                activeKeyboardField === "voucherCode"
-                                  ? voucherCode
-                                  : voucherAmount;
-                              let newValue = currentValue;
-                              if (key === "backspace") {
-                                newValue = currentValue.slice(0, -1);
-                              } else if (key === "space") {
-                                newValue = currentValue + " ";
-                              } else if (key === "clear") {
-                                newValue = "";
-                              } else {
-                                // Only allow numbers and dot for amount, any char for code
-                                if (
-                                  activeKeyboardField === "voucherAmount" &&
-                                  !/^[0-9.]$/.test(key)
-                                )
-                                  return;
-                                if (
-                                  activeKeyboardField === "voucherAmount" &&
-                                  key === "." &&
-                                  currentValue.includes(".")
-                                )
-                                  return;
-                                newValue = currentValue + key;
-                              }
-                              if (activeKeyboardField === "voucherCode") {
-                                setVoucherCode(newValue);
-                              } else {
-                                setVoucherAmount(newValue);
-                              }
-                            }}
-                          />
-                          <div className="flex gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              className="flex-1 border-pink-200"
-                              onClick={() =>
-                                setActiveKeyboardField("voucherCode")
-                              }
-                              variant={
-                                activeKeyboardField === "voucherCode"
-                                  ? "default"
-                                  : "outline"
-                              }
-                            >
-                              Edit Code
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 border-pink-200"
-                              onClick={() =>
-                                setActiveKeyboardField("voucherAmount")
-                              }
-                              variant={
-                                activeKeyboardField === "voucherAmount"
-                                  ? "default"
-                                  : "outline"
-                              }
-                            >
-                              Edit Amount
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )
                 )}
               </div>
             )}
 
-            {/* Total */}
-            <div className="mt-auto">
-              {cart.length > 0 && (
-                <>
-                  <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-pink-100">
-                    <span>Subtotal</span>
-                    <span>£{subtotal.toFixed(2)}</span>
-                  </div>
-
-                  {discountType !== "none" && discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-pink-600 mt-1">
-                      <span className="flex items-center">
-                        {discountType === "percentage" ? (
-                          <>
-                            <Percent className="mr-1 h-3 w-3" />
-                            {discountPercentage}% Discount
-                          </>
-                        ) : discountType === "voucher" ? (
-                          <>
-                            <Tag className="mr-1 h-3 w-3" />
-                            Voucher: {voucherCode}
-                          </>
-                        ) : (
-                          <>
-                            <Percent className="mr-1 h-3 w-3" />
-                            Custom Discount
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
-                          onClick={removeDiscount}
-                        >
-                          <X className="h-2.5 w-2.5" />
-                          <span className="sr-only">Remove discount</span>
-                        </Button>
-                      </span>
-                      <span>-£{discountAmount.toFixed(2)}</span>
+            {/* Keyboard and Checkout/Payment Options Split Area */}
+            {(showKeyboard || showPaymentOptions) && (
+              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                {/* Left: On-Screen Keyboard */}
+                {showKeyboard && (
+                  <div className="w-full sm:w-1/2 basis-1/2 flex-1 bg-pink-50 rounded-md p-2 border border-pink-100">
+                    <OnScreenKeyboard
+                      onKeyPress={(key) => {
+                        if (!activeKeyboardField) return;
+                        let currentValue =
+                          activeKeyboardField === "voucherCode"
+                            ? voucherCode
+                            : voucherAmount;
+                        let newValue = currentValue;
+                        if (key === "backspace") {
+                          newValue = currentValue.slice(0, -1);
+                        } else if (key === "space") {
+                          newValue = currentValue + " ";
+                        } else if (key === "clear") {
+                          newValue = "";
+                        } else {
+                          // Only allow numbers and dot for amount, any char for code
+                          if (
+                            activeKeyboardField === "voucherAmount" &&
+                            !/^[0-9.]$/.test(key)
+                          )
+                            return;
+                          if (
+                            activeKeyboardField === "voucherAmount" &&
+                            key === "." &&
+                            currentValue.includes(".")
+                          )
+                            return;
+                          newValue = currentValue + key;
+                        }
+                        if (activeKeyboardField === "voucherCode") {
+                          setVoucherCode(newValue);
+                        } else {
+                          setVoucherAmount(newValue);
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 border-pink-200"
+                        onClick={() => setActiveKeyboardField("voucherCode")}
+                        variant={
+                          activeKeyboardField === "voucherCode"
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        Edit Code
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 border-pink-200"
+                        onClick={() => setActiveKeyboardField("voucherAmount")}
+                        variant={
+                          activeKeyboardField === "voucherAmount"
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        Edit Amount
+                      </Button>
                     </div>
-                  )}
-
-                  <div className="flex justify-between font-medium text-base mt-2 pt-2 border-t border-pink-200">
-                    <span>Total</span>
-                    <span>£{total.toFixed(2)}</span>
                   </div>
-                </>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="p-3">
-            {showPaymentOptions ? (
-              <div className="w-full space-y-2">
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
-                  onClick={() => handlePayment("Card")}
-                >
-                  <CreditCard className="mr-1.5 h-4 w-4" />
-                  Pay with Card
-                </Button>
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-sm"
-                  onClick={() => handlePayment("Cash")}
-                >
-                  <Banknote className="mr-1.5 h-4 w-4" />
-                  Pay with Cash
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-9 text-sm"
-                  onClick={() => setShowPaymentOptions(false)}
-                >
-                  Back to Cart
-                </Button>
+                )}
+                {/* Right: Totals and Checkout/Payment Options */}
+                <div className="w-full sm:w-1/2 basis-1/2 flex-1 flex flex-col justify-between">
+                  {/* Totals Section */}
+                  <div className="mb-4">
+                    {cart.length > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-pink-100">
+                          <span>Subtotal</span>
+                          <span>£{subtotal.toFixed(2)}</span>
+                        </div>
+                        {discountType !== "none" && discountAmount > 0 && (
+                          <div className="flex justify-between text-sm text-pink-600 mt-1">
+                            <span className="flex items-center">
+                              {discountType === "percentage" ? (
+                                <>
+                                  <Percent className="mr-1 h-3 w-3" />
+                                  {discountPercentage}% Discount
+                                </>
+                              ) : discountType === "voucher" ? (
+                                <>
+                                  <Tag className="mr-1 h-3 w-3" />
+                                  Voucher: {voucherCode}
+                                </>
+                              ) : (
+                                <>
+                                  <Percent className="mr-1 h-3 w-3" />
+                                  Custom Discount
+                                </>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
+                                onClick={removeDiscount}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                                <span className="sr-only">Remove discount</span>
+                              </Button>
+                            </span>
+                            <span>-£{discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-medium text-base mt-2 pt-2 border-t border-pink-200">
+                          <span>Total</span>
+                          <span>£{total.toFixed(2)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Checkout/Payment Buttons */}
+                  {showPaymentOptions ? (
+                    <div className="w-full space-y-2">
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
+                        onClick={() => handlePayment("Card")}
+                      >
+                        <CreditCard className="mr-1.5 h-4 w-4" />
+                        Pay with Card
+                      </Button>
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-sm"
+                        onClick={() => handlePayment("Cash")}
+                      >
+                        <Banknote className="mr-1.5 h-4 w-4" />
+                        Pay with Cash
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full h-9 text-sm"
+                        onClick={() => setShowPaymentOptions(false)}
+                      >
+                        Back to Cart
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full bg-pink-600 hover:bg-pink-700 h-9 text-sm"
+                      disabled={cart.length === 0}
+                      onClick={handleCheckout}
+                    >
+                      <Receipt className="mr-1.5 h-4 w-4" />
+                      Checkout
+                    </Button>
+                  )}
+                </div>
               </div>
-            ) : (
-              <Button
-                className="w-full bg-pink-600 hover:bg-pink-700 h-9 text-sm"
-                disabled={cart.length === 0}
-                onClick={handleCheckout}
-              >
-                <Receipt className="mr-1.5 h-4 w-4" />
-                Checkout
-              </Button>
             )}
-          </CardFooter>
+
+            {/* Total (hidden when keyboard is open) */}
+            {!showKeyboard && (
+              <div className="mt-auto">
+                {cart.length > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-pink-100">
+                      <span>Subtotal</span>
+                      <span>£{subtotal.toFixed(2)}</span>
+                    </div>
+                    {discountType !== "none" && discountAmount > 0 && (
+                      <div className="flex justify-between text-sm text-pink-600 mt-1">
+                        <span className="flex items-center">
+                          {discountType === "percentage" ? (
+                            <>
+                              <Percent className="mr-1 h-3 w-3" />
+                              {discountPercentage}% Discount
+                            </>
+                          ) : discountType === "voucher" ? (
+                            <>
+                              <Tag className="mr-1 h-3 w-3" />
+                              Voucher: {voucherCode}
+                            </>
+                          ) : (
+                            <>
+                              <Percent className="mr-1 h-3 w-3" />
+                              Custom Discount
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
+                            onClick={removeDiscount}
+                          >
+                            <X className="h-2.5 w-2.5" />
+                            <span className="sr-only">Remove discount</span>
+                          </Button>
+                        </span>
+                        <span>-£{discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-medium text-base mt-2 pt-2 border-t border-pink-200">
+                      <span>Total</span>
+                      <span>£{total.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {/* Checkout/Payment Button (hidden when keyboard is open) */}
+            {!showPaymentOptions && !showKeyboard && (
+              <CardFooter className="p-3">
+                <Button
+                  className="w-full bg-pink-600 hover:bg-pink-700 h-9 text-sm"
+                  disabled={cart.length === 0}
+                  onClick={handleCheckout}
+                >
+                  <Receipt className="mr-1.5 h-4 w-4" />
+                  Checkout
+                </Button>
+              </CardFooter>
+            )}
+          </CardContent>
         </Card>
       </div>
 
