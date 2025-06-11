@@ -96,7 +96,7 @@ export default function DashboardStats() {
       }
 
       const data = await response.json();
-      return data.total || 0;
+      return data;
     } catch (err) {
       console.error("Error fetching sales:", err);
       return 0;
@@ -109,14 +109,14 @@ export default function DashboardStats() {
       setError(null);
       try {
         const [
-          todayTotal,
-          yesterdayTotal,
-          weeklyTotal,
-          lastWeekTotal,
-          monthlyTotal,
-          lastMonthTotal,
-          yearlyTotal,
-          lastYearTotal,
+          todayData,
+          yesterdayData,
+          weeklyData,
+          lastWeekData,
+          monthlyData,
+          lastMonthData,
+          yearlyData,
+          lastYearData,
         ] = await Promise.all([
           fetchSalesTotal(todayRange.start, todayRange.end),
           fetchSalesTotal(yesterdayRange.start, yesterdayRange.end),
@@ -128,14 +128,14 @@ export default function DashboardStats() {
           fetchSalesTotal(lastYearRange.start, lastYearRange.end),
         ]);
 
-        setTodaySales(todayTotal);
-        setYesterdaySales(yesterdayTotal);
-        setWeeklySales(weeklyTotal);
-        setLastWeekSales(lastWeekTotal);
-        setMonthlySales(monthlyTotal);
-        setLastMonthSales(lastMonthTotal);
-        setYearlySales(yearlyTotal);
-        setLastYearSales(lastYearTotal);
+        setTodaySales(todayData?.total || 0);
+        setYesterdaySales(yesterdayData?.total || 0);
+        setWeeklySales(weeklyData?.total || 0);
+        setLastWeekSales(lastWeekData?.total || 0);
+        setMonthlySales(monthlyData?.total || 0);
+        setLastMonthSales(lastMonthData?.total || 0);
+        setYearlySales(yearlyData?.total || 0);
+        setLastYearSales(lastYearData?.total || 0);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data");

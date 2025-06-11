@@ -111,6 +111,8 @@ type Transaction = {
   therapist: { id: string; name: string };
   items: TransactionItem[];
   paymentMethod: string;
+  total?: number;
+  discount?: number;
 };
 
 type UniqueFilters = {
@@ -141,6 +143,17 @@ export default function ReportsInterface() {
 
   // Data state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [summary, setSummary] = useState<{
+    total: number;
+    subtotal: number;
+    discount: number;
+    transactionCount: number;
+  }>({
+    total: 0,
+    subtotal: 0,
+    discount: 0,
+    transactionCount: 0,
+  });
   const [uniqueFilters, setUniqueFilters] = useState<UniqueFilters>({
     therapists: [],
     customers: [],
@@ -148,73 +161,70 @@ export default function ReportsInterface() {
   });
 
   // Loading and error states
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = async (start: Date, end: Date) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("/api/reports/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate: start, endDate: end }),
+      });
 
-        // Fetch transactions
-        const transactionsResponse = await fetch("/api/reports/transactions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
-            therapistId: therapistFilter,
-            customerId: customerFilter,
-            category: categoryFilter,
-          }),
-        });
-
-        if (!transactionsResponse.ok) {
-          const errorData = await transactionsResponse.json();
-          throw new Error(errorData.error || "Failed to fetch transactions");
-        }
-
-        const transactionsData = await transactionsResponse.json();
-        setTransactions(
-          Array.isArray(transactionsData.transactions)
-            ? transactionsData.transactions
-            : []
-        );
-
-        // Fetch unique filters
-        const filtersResponse = await fetch("/api/reports/unique");
-        if (!filtersResponse.ok) {
-          const errorData = await filtersResponse.json();
-          throw new Error(errorData.error || "Failed to fetch filters");
-        }
-
-        const filtersData = await filtersResponse.json();
-        setUniqueFilters(filtersData);
-      } catch (err: any) {
-        console.error("Error fetching data:", err);
-        setError(err.message || "An error occurred while fetching data");
-        setTransactions([]); // Reset transactions on error
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
       }
-    };
 
-    fetchData();
-  }, [dateRange, therapistFilter, customerFilter, categoryFilter]);
+      const data = await response.json();
+      setTransactions(data.transactions || []);
+      setSummary(
+        data.summary || {
+          total: 0,
+          subtotal: 0,
+          discount: 0,
+          transactionCount: 0,
+        }
+      );
+
+      // Fetch unique filters
+      const filtersResponse = await fetch("/api/reports/unique");
+      if (!filtersResponse.ok) {
+        const errorData = await filtersResponse.json();
+        throw new Error(errorData.error || "Failed to fetch filters");
+      }
+
+      const filtersData = await filtersResponse.json();
+      setUniqueFilters(filtersData);
+    } catch (err: any) {
+      console.error("Error fetching data:", err);
+      setError(err.message || "An error occurred while fetching data");
+      setTransactions([]); // Reset transactions on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when date range changes
+  useEffect(() => {
+    fetchData(dateRange.startDate, dateRange.endDate);
+  }, [dateRange]);
 
   // Aggregation
   const revenueByTherapist = useMemo(() => {
     const map: Record<string, { amount: number; count: number }> = {};
     transactions.forEach((tx: Transaction) => {
       const therapist = tx.therapist?.name || "Unknown";
-      tx.items.forEach((item: TransactionItem) => {
-        if (!map[therapist]) map[therapist] = { amount: 0, count: 0 };
-        map[therapist].amount +=
-          item.price * item.quantity - (item.discount || 0);
-        map[therapist].count += item.quantity;
-      });
+      if (!map[therapist]) map[therapist] = { amount: 0, count: 0 };
+      // Use transaction total (after discount) instead of calculating from items
+      map[therapist].amount += tx.total || 0;
+      map[therapist].count += tx.items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
     });
     return map;
   }, [transactions]);
@@ -223,12 +233,13 @@ export default function ReportsInterface() {
     const map: Record<string, { amount: number; count: number }> = {};
     transactions.forEach((tx: Transaction) => {
       const customer = tx.customer?.name || "Unknown";
-      tx.items.forEach((item: TransactionItem) => {
-        if (!map[customer]) map[customer] = { amount: 0, count: 0 };
-        map[customer].amount +=
-          item.price * item.quantity - (item.discount || 0);
-        map[customer].count += item.quantity;
-      });
+      if (!map[customer]) map[customer] = { amount: 0, count: 0 };
+      // Use transaction total (after discount) instead of calculating from items
+      map[customer].amount += tx.total || 0;
+      map[customer].count += tx.items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
     });
     return map;
   }, [transactions]);
@@ -239,11 +250,21 @@ export default function ReportsInterface() {
       { amount: number; count: number; category: string }
     > = {};
     transactions.forEach((tx) => {
+      // Calculate the discount per item proportionally
+      const totalItemsAmount = tx.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const discountPerItem =
+        totalItemsAmount > 0 ? (tx.discount || 0) / totalItemsAmount : 0;
+
       tx.items.forEach((item) => {
-        if (!map[item.name])
+        if (!map[item.name]) {
           map[item.name] = { amount: 0, count: 0, category: item.category };
-        map[item.name].amount +=
-          item.price * item.quantity - (item.discount || 0);
+        }
+        const itemTotal = item.price * item.quantity;
+        const itemDiscount = itemTotal * discountPerItem;
+        map[item.name].amount += itemTotal - itemDiscount;
         map[item.name].count += item.quantity;
       });
     });
@@ -252,26 +273,39 @@ export default function ReportsInterface() {
 
   const transactionList = useMemo(() => {
     return transactions.flatMap((tx) =>
-      tx.items.map((item) => ({
-        id: tx._id,
-        date: tx.date,
-        customer: tx.customer?.name,
-        therapist: tx.therapist?.name,
-        service: item.name,
-        category: item.category,
-        amount: item.price * item.quantity,
-        discount: item.discount || 0,
-        paymentMethod: tx.paymentMethod,
-      }))
+      tx.items.map((item) => {
+        // Calculate the discount per item proportionally
+        const totalItemsAmount = tx.items.reduce(
+          (sum, i) => sum + i.price * i.quantity,
+          0
+        );
+        const discountPerItem =
+          totalItemsAmount > 0 ? (tx.discount || 0) / totalItemsAmount : 0;
+        const itemTotal = item.price * item.quantity;
+        const itemDiscount = itemTotal * discountPerItem;
+
+        return {
+          id: tx._id,
+          date: tx.date,
+          customer: tx.customer?.name,
+          therapist: tx.therapist?.name,
+          service: item.name,
+          category: item.category,
+          amount: itemTotal,
+          discount: itemDiscount,
+          total: itemTotal - itemDiscount,
+          paymentMethod: tx.paymentMethod,
+        };
+      })
     );
   }, [transactions]);
 
   // Summary
-  const totalRevenue = transactionList.reduce(
-    (sum, t) => sum + (t.amount - t.discount),
+  const totalRevenue = transactions.reduce(
+    (sum, tx) => sum + (tx.total || 0),
     0
   );
-  const totalTransactions = transactionList.length;
+  const totalTransactions = transactions.length;
   const averageTransaction =
     totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
@@ -405,10 +439,10 @@ export default function ReportsInterface() {
         reportType === "therapist"
           ? "Revenue by Therapist"
           : reportType === "customer"
-          ? "Revenue by Customer"
-          : reportType === "service"
-          ? "Revenue by Service/Product"
-          : "Transaction List";
+            ? "Revenue by Customer"
+            : reportType === "service"
+              ? "Revenue by Service/Product"
+              : "Transaction List";
 
       printWindow.document.write(`
         <html>
@@ -460,7 +494,7 @@ export default function ReportsInterface() {
                   .join("")}
               `
                   : reportType === "customer"
-                  ? `
+                    ? `
                 <tr>
                   <th>Customer</th>
                   <th>Visits</th>
@@ -480,8 +514,8 @@ export default function ReportsInterface() {
                   )
                   .join("")}
               `
-                  : reportType === "service"
-                  ? `
+                    : reportType === "service"
+                      ? `
                 <tr>
                   <th>Service/Product</th>
                   <th>Category</th>
@@ -503,7 +537,7 @@ export default function ReportsInterface() {
                   )
                   .join("")}
               `
-                  : `
+                      : `
                 <tr>
                   <th>Date</th>
                   <th>Customer</th>
@@ -550,7 +584,7 @@ export default function ReportsInterface() {
   // Retry functionality
   const retryFetch = () => {
     setError(null);
-    fetchData();
+    fetchData(dateRange.startDate, dateRange.endDate);
   };
 
   // Update date range when time period changes
@@ -802,7 +836,7 @@ export default function ReportsInterface() {
 
       {/* Summary Cards */}
       {!loading && !error && transactions.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card className="border-pink-200">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-pink-600">
@@ -810,8 +844,8 @@ export default function ReportsInterface() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                £{totalRevenue.toFixed(2)}
+              <div className="text-2xl font-bold text-pink-800">
+                £{summary.total.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </CardContent>
@@ -824,7 +858,9 @@ export default function ReportsInterface() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalTransactions}</div>
+              <div className="text-2xl font-bold">
+                {summary.transactionCount}
+              </div>
               <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </CardContent>
           </Card>
@@ -836,8 +872,22 @@ export default function ReportsInterface() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                £{averageTransaction.toFixed(2)}
+              <div className="text-2xl font-bold text-pink-800">
+                £{(summary.total / summary.transactionCount || 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-pink-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-pink-600">
+                Total Discounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                -£{summary.discount.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">{dateRangeLabel}</p>
             </CardContent>
@@ -854,10 +904,10 @@ export default function ReportsInterface() {
                 {reportType === "therapist"
                   ? "Revenue by Therapist"
                   : reportType === "customer"
-                  ? "Revenue by Customer"
-                  : reportType === "service"
-                  ? "Revenue by Service/Product"
-                  : "Transaction List"}
+                    ? "Revenue by Customer"
+                    : reportType === "service"
+                      ? "Revenue by Service/Product"
+                      : "Transaction List"}
               </CardTitle>
               <CardDescription>{dateRangeLabel}</CardDescription>
             </div>

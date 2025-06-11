@@ -24,7 +24,6 @@ import { Download, X } from "lucide-react";
 import {
   groupTransactionsByCustomer,
   groupTransactionsByService,
-  type TransactionData,
 } from "@/data/reports-data";
 
 interface SalesTablesDialogProps {
@@ -48,12 +47,17 @@ interface TransactionData {
   _id: string;
   date: string | Date;
   customer?: {
+    id: string;
     name: string;
   };
   therapist?: {
+    id: string;
     name: string;
   };
   items: TransactionItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
   paymentMethod?: string;
 }
 
@@ -67,7 +71,7 @@ export default function SalesTablesDialog({
 }: SalesTablesDialogProps) {
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("transactions");
+  const [activeTab, setActiveTab] = useState("summary");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,7 +121,7 @@ export default function SalesTablesDialog({
           transactionCount: 0,
         };
       }
-      const amount = transaction.total - (transaction.discount || 0);
+      const amount = transaction.total || 0; // Total is already after discount
       grouped[therapistId].totalAmount += amount;
       grouped[therapistId].transactionCount += 1;
       if (transaction.paymentMethod?.toLowerCase() === "card") {
@@ -149,7 +153,7 @@ export default function SalesTablesDialog({
           transactionCount: 0,
         };
       }
-      const amount = transaction.total - (transaction.discount || 0);
+      const amount = transaction.total || 0; // Total is already after discount
       grouped[customerId].totalAmount += amount;
       grouped[customerId].transactionCount += 1;
     });
@@ -195,6 +199,19 @@ export default function SalesTablesDialog({
     }
   };
 
+  // Get transaction summaries and individual items
+  const transactionSummaries = transactions.map((tx) => ({
+    id: tx._id,
+    date: tx.date,
+    customer: tx.customer?.name || "Unknown",
+    therapist: tx.therapist?.name || "Unknown",
+    subtotal: tx.subtotal || 0,
+    discount: tx.discount || 0,
+    total: tx.total || 0, // This is the final amount after discount
+    paymentMethod: tx.paymentMethod || "Unknown",
+    itemCount: tx.items?.length || 0,
+  }));
+
   // Get all transactions with their items flattened
   const transactionList = transactions.flatMap((tx) =>
     tx.items.map((item) => ({
@@ -205,9 +222,10 @@ export default function SalesTablesDialog({
       service: item.name,
       category: item.category || "Uncategorized",
       amount: item.price * item.quantity,
-      discount: item.discount || 0,
       quantity: item.quantity,
       paymentMethod: tx.paymentMethod || "Unknown",
+      // Use transaction total (after discount) for the final amount
+      transactionTotal: tx.total || 0,
     }))
   );
 
@@ -245,20 +263,147 @@ export default function SalesTablesDialog({
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+              <TabsTrigger value="summary" className="text-xs md:text-sm">
+                Summary
+              </TabsTrigger>
               <TabsTrigger value="transactions" className="text-xs md:text-sm">
-                Transactions
+                Items
               </TabsTrigger>
               <TabsTrigger value="therapists" className="text-xs md:text-sm">
-                By Therapist
+                Therapists
               </TabsTrigger>
               <TabsTrigger value="customers" className="text-xs md:text-sm">
-                By Customer
+                Customers
               </TabsTrigger>
               <TabsTrigger value="services" className="text-xs md:text-sm">
-                By Service
+                Services
               </TabsTrigger>
-                </TabsList>
+            </TabsList>
+
+            <TabsContent value="summary" className="mt-4">
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs md:text-sm"
+                  onClick={() => {
+                    // Export transaction summaries to CSV
+                    const csvContent = [
+                      // Header
+                      [
+                        "Date",
+                        "Customer",
+                        "Therapist",
+                        "Items",
+                        "Subtotal",
+                        "Discount",
+                        "Total",
+                        "Payment Method",
+                      ].join(","),
+                      // Data rows
+                      ...transactionSummaries.map((t) =>
+                        [
+                          formatDate(t.date),
+                          `"${t.customer}"`,
+                          `"${t.therapist}"`,
+                          t.itemCount,
+                          t.subtotal.toFixed(2),
+                          t.discount.toFixed(2),
+                          t.total.toFixed(2),
+                          `"${t.paymentMethod}"`,
+                        ].join(",")
+                      ),
+                    ].join("\n");
+
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `transaction_summary_${format(
+                      startDate,
+                      "yyyy-MM-dd"
+                    )}_to_${format(endDate, "yyyy-MM-dd")}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                  }}
+                >
+                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
+
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm">
+                        Date
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm">
+                        Customer
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm">
+                        Therapist
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
+                        Items
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
+                        Subtotal
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
+                        Discount
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
+                        Total
+                      </TableHead>
+                      <TableHead className="whitespace-nowrap text-xs md:text-sm">
+                        Payment
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactionSummaries.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="whitespace-nowrap text-xs md:text-sm">
+                          {formatDate(t.date)}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm">
+                          {t.customer}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm">
+                          {t.therapist}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm text-right">
+                          {t.itemCount}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm text-right text-gray-600">
+                          £{t.subtotal.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm text-right">
+                          {t.discount > 0 ? (
+                            <span className="text-red-600">
+                              -£{t.discount.toFixed(2)}
+                            </span>
+                          ) : (
+                            "£0.00"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm text-right font-semibold text-pink-800">
+                          £{t.total.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-xs md:text-sm">
+                          {t.paymentMethod}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
 
             <TabsContent value="transactions" className="mt-4">
               <div className="flex justify-end mb-4">
@@ -277,8 +422,8 @@ export default function SalesTablesDialog({
                         "Service",
                         "Category",
                         "Quantity",
-                        "Amount",
-                        "Discount",
+                        "Item Amount",
+                        "Transaction Total",
                         "Payment Method",
                       ].join(","),
                       // Data rows
@@ -291,7 +436,7 @@ export default function SalesTablesDialog({
                           `"${t.category}"`,
                           t.quantity,
                           t.amount.toFixed(2),
-                          t.discount.toFixed(2),
+                          t.transactionTotal.toFixed(2),
                           `"${t.paymentMethod}"`,
                         ].join(",")
                       ),
@@ -339,10 +484,10 @@ export default function SalesTablesDialog({
                         Quantity
                       </TableHead>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
-                        Amount
+                        Item Amount
                       </TableHead>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
-                        Discount
+                        Transaction Total
                       </TableHead>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Payment
@@ -370,11 +515,11 @@ export default function SalesTablesDialog({
                         <TableCell className="text-xs md:text-sm text-right">
                           {t.quantity}
                         </TableCell>
-                        <TableCell className="text-xs md:text-sm text-right">
+                        <TableCell className="text-xs md:text-sm text-right text-gray-600">
                           £{t.amount.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-xs md:text-sm text-right">
-                          £{t.discount.toFixed(2)}
+                        <TableCell className="text-xs md:text-sm text-right font-semibold text-pink-800">
+                          £{t.transactionTotal.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-xs md:text-sm">
                           {t.paymentMethod}
@@ -388,9 +533,9 @@ export default function SalesTablesDialog({
 
             <TabsContent value="therapists" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Therapist
                       </TableHead>
@@ -406,38 +551,38 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Transactions
                       </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {therapistData().map((therapist) => (
-                          <TableRow key={therapist.name}>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {therapistData().map((therapist) => (
+                      <TableRow key={therapist.name}>
                         <TableCell className="text-xs md:text-sm">
                           {therapist.name}
-                            </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.cardAmount.toFixed(2)}
-                          </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.cashAmount.toFixed(2)}
-                          </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.totalAmount.toFixed(2)}
-                          </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {therapist.transactionCount}
-                          </TableCell>
-                        </TableRow>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                      </TableBody>
-                    </Table>
+                  </TableBody>
+                </Table>
               </div>
-                  </TabsContent>
+            </TabsContent>
 
             <TabsContent value="customers" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Customer
                       </TableHead>
@@ -447,32 +592,32 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Transactions
                       </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {customerData().map((customer) => (
-                          <TableRow key={customer.name}>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customerData().map((customer) => (
+                      <TableRow key={customer.name}>
                         <TableCell className="text-xs md:text-sm">
                           {customer.name}
                         </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{customer.totalAmount.toFixed(2)}
-                          </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {customer.transactionCount}
-                          </TableCell>
-                        </TableRow>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                      </TableBody>
-                    </Table>
+                  </TableBody>
+                </Table>
               </div>
-                  </TabsContent>
+            </TabsContent>
 
             <TabsContent value="services" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Service/Product
                       </TableHead>
@@ -485,11 +630,11 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Count
                       </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {serviceData().map((service) => (
-                          <TableRow key={service.name}>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {serviceData().map((service) => (
+                      <TableRow key={service.name}>
                         <TableCell className="text-xs md:text-sm">
                           {service.name}
                         </TableCell>
@@ -498,17 +643,17 @@ export default function SalesTablesDialog({
                         </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{service.totalAmount.toFixed(2)}
-                          </TableCell>
+                        </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {service.transactionCount}
-                          </TableCell>
-                        </TableRow>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                      </TableBody>
-                    </Table>
+                  </TableBody>
+                </Table>
               </div>
-                  </TabsContent>
-              </Tabs>
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>

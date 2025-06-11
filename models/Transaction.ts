@@ -88,18 +88,55 @@ transactionSchema.index({ "customer.id": 1 });
 transactionSchema.index({ "therapist.id": 1 });
 transactionSchema.index({ status: 1 });
 
-// Add validation to ensure total matches items
+// Add validation to ensure calculations are correct
 transactionSchema.pre("save", function (next) {
+  // Calculate items total (before any discounts)
   const itemsTotal = this.items.reduce((sum, item) => {
-    return sum + (item.price * item.quantity - item.discount);
+    return sum + item.price * item.quantity;
   }, 0);
 
+  // Validate subtotal matches items total (before discounts)
   if (Math.abs(itemsTotal - this.subtotal) > 0.01) {
-    next(new Error("Subtotal does not match items total"));
+    console.error("Subtotal validation failed:", {
+      itemsTotal,
+      subtotal: this.subtotal,
+      difference: Math.abs(itemsTotal - this.subtotal),
+    });
+    next(
+      new Error(
+        `Subtotal does not match items total: ${itemsTotal} vs ${this.subtotal}`
+      )
+    );
+    return;
   }
 
-  if (Math.abs(this.subtotal - this.discount - this.total) > 0.01) {
-    next(new Error("Total does not match subtotal minus discount"));
+  // Validate total = subtotal - discount
+  const expectedTotal = Math.max(0, this.subtotal - (this.discount || 0));
+  if (Math.abs(expectedTotal - this.total) > 0.01) {
+    console.error("Total validation failed:", {
+      subtotal: this.subtotal,
+      discount: this.discount || 0,
+      total: this.total,
+      expectedTotal,
+    });
+    next(
+      new Error(
+        `Total does not match subtotal minus discount: ${expectedTotal} vs ${this.total}`
+      )
+    );
+    return;
+  }
+
+  // Ensure discount is not negative
+  if (this.discount < 0) {
+    next(new Error("Discount cannot be negative"));
+    return;
+  }
+
+  // Ensure discount doesn't exceed subtotal
+  if (this.discount > this.subtotal) {
+    next(new Error("Discount cannot exceed subtotal"));
+    return;
   }
 
   next();

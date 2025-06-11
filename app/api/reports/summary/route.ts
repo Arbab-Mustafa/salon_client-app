@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
     const TransactionModel = Transaction as Model<TransactionData>;
     const transactions: TransactionData[] = await TransactionModel.find({
       date: { $gte: start, $lte: end },
-    }).lean();
+    })
+      .sort({ date: -1 })
+      .lean();
 
     // Debug logging
     console.log("/api/reports/summary", {
@@ -41,21 +43,31 @@ export async function POST(req: NextRequest) {
       transactionCount: transactions.length,
     });
 
-    // Sum all items in all transactions
+    // Calculate total revenue using transaction-level totals (after discounts)
     let total = 0;
+    let subtotal = 0;
+    let totalDiscount = 0;
+
     transactions.forEach((tx) => {
-      if (Array.isArray(tx.items)) {
-        tx.items.forEach((item) => {
-          total += item.price * item.quantity - (item.discount || 0);
-        });
-      }
+      // Use transaction total (which is subtotal - discount)
+      total += tx.total || 0;
+      subtotal += tx.subtotal || 0;
+      totalDiscount += tx.discount || 0;
     });
 
-    return NextResponse.json({ total });
-  } catch (error: any) {
-    console.error("/api/reports/summary error:", error);
+    return NextResponse.json({
+      transactions, // Return the full transaction data
+      summary: {
+        total: Math.round(total * 100) / 100,
+        subtotal: Math.round(subtotal * 100) / 100,
+        discount: Math.round(totalDiscount * 100) / 100,
+        transactionCount: transactions.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error in /api/reports/summary:", error);
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { error: "Failed to fetch report data" },
       { status: 500 }
     );
   }

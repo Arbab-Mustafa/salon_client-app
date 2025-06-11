@@ -46,7 +46,7 @@ type CartItem = {
   category?: string;
 };
 
-type DiscountType = "none" | "percentage" | "voucher";
+type DiscountType = "none" | "percentage" | "voucher" | "custom";
 
 export default function PosInterface() {
   const { getActiveServicesByCategory } = useServices();
@@ -65,6 +65,7 @@ export default function PosInterface() {
   >("10");
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherAmount, setVoucherAmount] = useState("");
+  const [customDiscountAmount, setCustomDiscountAmount] = useState("");
   const [showDiscountOptions, setShowDiscountOptions] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<{
     id: string;
@@ -129,6 +130,7 @@ export default function PosInterface() {
     setDiscountType("none");
     setVoucherCode("");
     setVoucherAmount("");
+    setCustomDiscountAmount("");
     setShowDiscountOptions(false);
     setSelectedCustomer(null);
     if (user?.role === "manager") {
@@ -177,21 +179,14 @@ export default function PosInterface() {
     // Find owner (if needed)
     const ownerData = users.find((u) => u.role === "owner");
 
-    // Prepare items array
+    // Prepare items array - NO item-level discounts, keep it simple
     const items = cart.map((item) => {
-      let itemDiscount = 0;
-      if (discountType === "percentage") {
-        itemDiscount = item.price * (Number(discountPercentage) / 100);
-      } else if (discountType === "voucher" && voucherAmount) {
-        const proportion = (item.price * item.quantity) / subtotal;
-        itemDiscount = Math.min(Number(voucherAmount) * proportion, item.price);
-      }
       return {
         name: item.name,
         category: item.category || "unknown",
         price: item.price,
         quantity: item.quantity,
-        discount: itemDiscount * item.quantity,
+        discount: 0, // No item-level discounts
       };
     });
 
@@ -200,40 +195,75 @@ export default function PosInterface() {
       customer: {
         id: selectedCustomer.id,
         name: selectedCustomer.name,
-        phone: customerData?.phone,
-        email: customerData?.email,
+        phone: customerData?.phone || "",
+        email: customerData?.email || "",
       },
       therapist: {
         id: selectedTherapist.id,
         name: selectedTherapist.name,
-        role: therapistData?.role,
+        role: therapistData?.role || "therapist",
       },
-      owner: {
-        id: ownerData?.id,
-        name: ownerData?.name,
-        role: ownerData?.role,
-      },
+      owner: ownerData
+        ? {
+            id: ownerData.id,
+            name: ownerData.name,
+            role: ownerData.role,
+          }
+        : undefined,
       items,
-      subtotal,
-      discount: discountAmount,
-      total,
+      subtotal: Math.round(subtotal * 100) / 100,
+      discount: Math.round(discountAmount * 100) / 100,
+      total: Math.round(total * 100) / 100,
       paymentMethod: method.toLowerCase(),
     };
 
-    const res = await fetch("/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(transactionData),
+    // Debug logging
+    console.log("Transaction data being sent:", {
+      subtotal: transactionData.subtotal,
+      discount: transactionData.discount,
+      total: transactionData.total,
+      discountType,
+      discountPercentage:
+        discountType === "percentage" ? discountPercentage : null,
+      voucherCode: discountType === "voucher" ? voucherCode : null,
+      voucherAmount: discountType === "voucher" ? voucherAmount : null,
     });
 
-    if (res.ok) {
-      toast.success(
-        `Payment processed via ${method} for ${selectedCustomer.name} by ${selectedTherapist.name}. Thank you!`
-      );
-      await updateLastVisit(selectedCustomer.id);
-      clearCart();
-    } else {
-      toast.error("Failed to process transaction");
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(transactionData),
+      });
+
+      if (res.ok) {
+        const responseData = await res.json();
+        console.log("Transaction created successfully:", responseData);
+
+        let discountMessage = "";
+        if (discountAmount > 0) {
+          if (discountType === "percentage") {
+            discountMessage = ` (${discountPercentage}% discount applied: -£${discountAmount.toFixed(2)})`;
+          } else if (discountType === "voucher") {
+            discountMessage = ` (Voucher ${voucherCode} applied: -£${discountAmount.toFixed(2)})`;
+          }
+        }
+
+        toast.success(
+          `Payment of £${total.toFixed(2)} processed via ${method} for ${selectedCustomer.name} by ${selectedTherapist.name}${discountMessage}. Thank you!`
+        );
+        await updateLastVisit(selectedCustomer.id);
+        clearCart();
+      } else {
+        const errorData = await res.json();
+        console.error("Transaction error:", errorData);
+        toast.error(
+          `Failed to process transaction: ${errorData.error || "Unknown error"}`
+        );
+      }
+    } catch (error) {
+      console.error("Network error during transaction:", error);
+      toast.error("Network error occurred. Please try again.");
     }
   };
 
@@ -243,17 +273,38 @@ export default function PosInterface() {
       return;
     }
 
-    if (
-      !voucherAmount.trim() ||
-      isNaN(Number(voucherAmount)) ||
-      Number(voucherAmount) <= 0
-    ) {
+    const amount = Number(voucherAmount);
+    if (!voucherAmount.trim() || isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid voucher amount");
       return;
     }
 
-    toast.success(`Voucher ${voucherCode} applied for £${voucherAmount}`);
+    if (amount > subtotal) {
+      toast.error("Voucher amount cannot exceed cart subtotal");
+      return;
+    }
+
+    toast.success(`Voucher ${voucherCode} applied for £${amount.toFixed(2)}`);
     setDiscountType("voucher");
+    setVoucherAmount(amount.toFixed(2)); // Ensure consistent formatting
+    setShowDiscountOptions(false);
+  };
+
+  const applyCustomDiscount = () => {
+    const amount = Number(customDiscountAmount);
+    if (!customDiscountAmount.trim() || isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid discount amount");
+      return;
+    }
+
+    if (amount > subtotal) {
+      toast.error("Discount amount cannot exceed cart subtotal");
+      return;
+    }
+
+    toast.success(`Custom discount of £${amount.toFixed(2)} applied`);
+    setDiscountType("custom");
+    setCustomDiscountAmount(amount.toFixed(2));
     setShowDiscountOptions(false);
   };
 
@@ -261,6 +312,7 @@ export default function PosInterface() {
     setDiscountType("none");
     setVoucherCode("");
     setVoucherAmount("");
+    setCustomDiscountAmount("");
   };
 
   const categoryServices = getActiveServicesByCategory(activeCategory);
@@ -280,12 +332,23 @@ export default function PosInterface() {
 
   let discountAmount = 0;
   if (discountType === "percentage") {
-    discountAmount = subtotal * (Number(discountPercentage) / 100);
+    discountAmount =
+      Math.round(subtotal * (Number(discountPercentage) / 100) * 100) / 100;
   } else if (discountType === "voucher" && voucherAmount) {
-    discountAmount = Math.min(Number(voucherAmount), subtotal);
+    const voucherValue = Number(voucherAmount);
+    discountAmount = Math.min(voucherValue, subtotal);
+    // Ensure we don't have floating point precision issues
+    discountAmount = Math.round(discountAmount * 100) / 100;
+  } else if (discountType === "custom" && customDiscountAmount) {
+    const customValue = Number(customDiscountAmount);
+    discountAmount = Math.min(customValue, subtotal);
+    discountAmount = Math.round(discountAmount * 100) / 100;
   }
 
-  const total = subtotal - discountAmount;
+  const total = Math.max(
+    0,
+    Math.round((subtotal - discountAmount) * 100) / 100
+  );
 
   const topPadding = user?.role === "manager" ? "mt-0" : "mt-20";
 
@@ -616,38 +679,50 @@ export default function PosInterface() {
             {/* Total */}
             <div className="mt-auto">
               {cart.length > 0 && (
-                <div className="flex justify-between font-medium text-base pt-2 border-t border-pink-100">
-                  <span>Total</span>
-                  <span>£{total.toFixed(2)}</span>
-                </div>
-              )}
+                <>
+                  <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-pink-100">
+                    <span>Subtotal</span>
+                    <span>£{subtotal.toFixed(2)}</span>
+                  </div>
 
-              {discountType !== "none" && (
-                <div className="flex justify-between text-xs text-pink-600 mt-1">
-                  <span className="flex items-center">
-                    {discountType === "percentage" ? (
-                      <>
-                        <Percent className="mr-1 h-3 w-3" />
-                        {discountPercentage}% Discount
-                      </>
-                    ) : (
-                      <>
-                        <Tag className="mr-1 h-3 w-3" />
-                        Voucher: {voucherCode}
-                      </>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
-                      onClick={removeDiscount}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                      <span className="sr-only">Remove discount</span>
-                    </Button>
-                  </span>
-                  <span>-£{discountAmount.toFixed(2)}</span>
-                </div>
+                  {discountType !== "none" && discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-pink-600 mt-1">
+                      <span className="flex items-center">
+                        {discountType === "percentage" ? (
+                          <>
+                            <Percent className="mr-1 h-3 w-3" />
+                            {discountPercentage}% Discount
+                          </>
+                        ) : discountType === "voucher" ? (
+                          <>
+                            <Tag className="mr-1 h-3 w-3" />
+                            Voucher: {voucherCode}
+                          </>
+                        ) : (
+                          <>
+                            <Percent className="mr-1 h-3 w-3" />
+                            Custom Discount
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 ml-1 text-gray-400 hover:text-red-500"
+                          onClick={removeDiscount}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                          <span className="sr-only">Remove discount</span>
+                        </Button>
+                      </span>
+                      <span>-£{discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between font-medium text-base mt-2 pt-2 border-t border-pink-200">
+                    <span>Total</span>
+                    <span>£{total.toFixed(2)}</span>
+                  </div>
+                </>
               )}
             </div>
           </CardContent>
