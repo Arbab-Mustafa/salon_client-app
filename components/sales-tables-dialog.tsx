@@ -279,7 +279,7 @@ export default function SalesTablesDialog({
               <TabsTrigger value="services" className="text-xs md:text-sm">
                 Services
               </TabsTrigger>
-            </TabsList>
+                </TabsList>
 
             <TabsContent value="summary" className="mt-4">
               <div className="flex justify-end mb-4">
@@ -533,9 +533,9 @@ export default function SalesTablesDialog({
 
             <TabsContent value="therapists" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Therapist
                       </TableHead>
@@ -551,38 +551,38 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Transactions
                       </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {therapistData().map((therapist) => (
-                      <TableRow key={therapist.name}>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {therapistData().map((therapist) => (
+                          <TableRow key={therapist.name}>
                         <TableCell className="text-xs md:text-sm">
                           {therapist.name}
-                        </TableCell>
+                            </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.cardAmount.toFixed(2)}
-                        </TableCell>
+                          </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.cashAmount.toFixed(2)}
-                        </TableCell>
+                          </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{therapist.totalAmount.toFixed(2)}
-                        </TableCell>
+                          </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {therapist.transactionCount}
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                        </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                      </TableBody>
+                    </Table>
               </div>
-            </TabsContent>
+                  </TabsContent>
 
             <TabsContent value="customers" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Customer
                       </TableHead>
@@ -592,32 +592,32 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Transactions
                       </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customerData().map((customer) => (
-                      <TableRow key={customer.name}>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customerData().map((customer) => (
+                          <TableRow key={customer.name}>
                         <TableCell className="text-xs md:text-sm">
                           {customer.name}
                         </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{customer.totalAmount.toFixed(2)}
-                        </TableCell>
+                          </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {customer.transactionCount}
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                        </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                      </TableBody>
+                    </Table>
               </div>
-            </TabsContent>
+                  </TabsContent>
 
             <TabsContent value="services" className="mt-4">
               <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
                       <TableHead className="whitespace-nowrap text-xs md:text-sm">
                         Service/Product
                       </TableHead>
@@ -630,11 +630,11 @@ export default function SalesTablesDialog({
                       <TableHead className="whitespace-nowrap text-xs md:text-sm text-right">
                         Count
                       </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {serviceData().map((service) => (
-                      <TableRow key={service.name}>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {serviceData().map((service) => (
+                          <TableRow key={service.name}>
                         <TableCell className="text-xs md:text-sm">
                           {service.name}
                         </TableCell>
@@ -643,17 +643,17 @@ export default function SalesTablesDialog({
                         </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           £{service.totalAmount.toFixed(2)}
-                        </TableCell>
+                          </TableCell>
                         <TableCell className="text-xs md:text-sm text-right">
                           {service.transactionCount}
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                        </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                      </TableBody>
+                    </Table>
               </div>
-            </TabsContent>
-          </Tabs>
+                  </TabsContent>
+              </Tabs>
         )}
       </DialogContent>
     </Dialog>

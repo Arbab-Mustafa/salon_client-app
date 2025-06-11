@@ -37,6 +37,7 @@ import { useCustomers } from "@/context/customer-context";
 import { CustomerSelector } from "@/components/customer-selector";
 import { TherapistSelector } from "@/components/therapist-selector";
 import { useSession } from "next-auth/react";
+import { OnScreenKeyboard } from "@/components/on-screen-keyboard";
 
 type CartItem = {
   id: string;
@@ -81,6 +82,10 @@ export default function PosInterface() {
       : null
   );
   const [showTherapistSelector, setShowTherapistSelector] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeKeyboardField, setActiveKeyboardField] = useState<
+    "voucherCode" | "voucherAmount" | null
+  >(null);
 
   const categories = Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
     id: value as ServiceCategory,
@@ -353,9 +358,17 @@ export default function PosInterface() {
   const topPadding = user?.role === "manager" ? "mt-0" : "mt-20";
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${topPadding}`}>
+    <div
+      className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${topPadding} transition-all duration-300`}
+    >
       {/* Product Selection */}
-      <div className="lg:col-span-2">
+      <div
+        className={
+          showKeyboard
+            ? "lg:col-span-1 transition-all duration-300"
+            : "lg:col-span-2 transition-all duration-300"
+        }
+      >
         <Card className="border-pink-200">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -439,7 +452,13 @@ export default function PosInterface() {
       </div>
 
       {/* Cart & Checkout */}
-      <div>
+      <div
+        className={
+          showKeyboard
+            ? "transition-all duration-300 lg:col-span-2"
+            : "transition-all duration-300"
+        }
+      >
         <Card className="border-pink-200">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -460,12 +479,12 @@ export default function PosInterface() {
             </div>
           </CardHeader>
           <CardContent
-            className="flex flex-col p-3"
-            style={{ height: "calc(100vh - 280px)", minHeight: "300px" }}
+            className="flex flex-col p-2"
+            style={{ height: "auto", minHeight: "310px" }}
           >
             <div className="flex-grow">
               {cart.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">
+                <div className="text-center py-4 text-muted-foreground text-sm">
                   Your cart is empty
                 </div>
               ) : (
@@ -529,7 +548,7 @@ export default function PosInterface() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 text-xs text-gray-500"
+                    className="h-4 text-xs text-gray-500"
                     onClick={() => setSelectedCustomer(null)}
                   >
                     Clear
@@ -574,15 +593,15 @@ export default function PosInterface() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full text-pink-600 border-pink-200 h-8 text-sm"
+                    className="w-full text-pink-600 border-pink-200 h-6 text-sm"
                     onClick={() => setShowDiscountOptions(true)}
                   >
-                    <Percent className="mr-1.5 h-3.5 w-3.5" />
+                    <Percent className="mr-1.5 h-3 w-3" />
                     Add Discount or Voucher
                   </Button>
                 ) : (
                   showDiscountOptions && (
-                    <div className="space-y-2 p-2 bg-pink-50 rounded-md">
+                    <div className="space-y-1 p-2 bg-pink-50 rounded-md">
                       <div className="flex justify-between items-center">
                         <h4 className="text-xs font-medium text-pink-800">
                           Apply Discount
@@ -597,7 +616,6 @@ export default function PosInterface() {
                           <span className="sr-only">Close</span>
                         </Button>
                       </div>
-
                       <div className="grid gap-1.5">
                         <div className="flex items-center justify-between">
                           <Label
@@ -637,7 +655,6 @@ export default function PosInterface() {
                             ))}
                           </div>
                         </div>
-
                         <div className="flex flex-col gap-1.5 pt-1.5 border-t border-pink-100">
                           <Label htmlFor="voucher-code" className="text-xs">
                             Voucher Code
@@ -648,7 +665,13 @@ export default function PosInterface() {
                               placeholder="Enter code"
                               value={voucherCode}
                               onChange={(e) => setVoucherCode(e.target.value)}
-                              className="border-pink-200 h-8 text-sm"
+                              className="border-pink-200 h-6 text-sm"
+                              onFocus={() => {
+                                setActiveKeyboardField("voucherCode");
+                              }}
+                              onClick={() => {
+                                setActiveKeyboardField("voucherCode");
+                              }}
                             />
                             <Input
                               id="voucher-amount"
@@ -658,18 +681,120 @@ export default function PosInterface() {
                               step="0.01"
                               value={voucherAmount}
                               onChange={(e) => setVoucherAmount(e.target.value)}
-                              className="border-pink-200 h-8 text-sm"
+                              className="border-pink-200 h-6 text-sm"
+                              onFocus={() => {
+                                setActiveKeyboardField("voucherAmount");
+                              }}
+                              onClick={() => {
+                                setActiveKeyboardField("voucherAmount");
+                              }}
                             />
                           </div>
-                          <Button
-                            size="sm"
-                            className="mt-1 bg-pink-600 hover:bg-pink-700 h-8 text-sm"
-                            onClick={applyVoucher}
-                          >
-                            Apply Voucher
-                          </Button>
+                          <div className="flex gap-2 mt-1">
+                            <Button
+                              size="sm"
+                              className="bg-pink-600 hover:bg-pink-700 h-7 text-sm flex-1"
+                              onClick={applyVoucher}
+                            >
+                              Apply Voucher
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={showKeyboard ? "default" : "outline"}
+                              size="sm"
+                              className={`transition-all duration-200 text-xs flex-1 ${
+                                showKeyboard
+                                  ? "bg-pink-600 hover:bg-pink-700 text-white"
+                                  : "border-pink-300 text-pink-600 hover:bg-pink-50"
+                              }`}
+                              onClick={() => {
+                                setShowKeyboard(!showKeyboard);
+                                if (!showKeyboard && activeKeyboardField) {
+                                  // If showing keyboard and we have an active field, keep it active
+                                  // Otherwise, default to voucher code
+                                  setActiveKeyboardField(
+                                    activeKeyboardField || "voucherCode"
+                                  );
+                                }
+                              }}
+                            >
+                              <span className="mr-1">⌨️</span>
+                              {showKeyboard ? "Hide Keyboard" : "Show Keyboard"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
+                      {/* On-Screen Keyboard for voucher fields */}
+                      {showKeyboard && (
+                        <div className="mt-2">
+                          <OnScreenKeyboard
+                            onKeyPress={(key) => {
+                              if (!activeKeyboardField) return;
+                              let currentValue =
+                                activeKeyboardField === "voucherCode"
+                                  ? voucherCode
+                                  : voucherAmount;
+                              let newValue = currentValue;
+                              if (key === "backspace") {
+                                newValue = currentValue.slice(0, -1);
+                              } else if (key === "space") {
+                                newValue = currentValue + " ";
+                              } else if (key === "clear") {
+                                newValue = "";
+                              } else {
+                                // Only allow numbers and dot for amount, any char for code
+                                if (
+                                  activeKeyboardField === "voucherAmount" &&
+                                  !/^[0-9.]$/.test(key)
+                                )
+                                  return;
+                                if (
+                                  activeKeyboardField === "voucherAmount" &&
+                                  key === "." &&
+                                  currentValue.includes(".")
+                                )
+                                  return;
+                                newValue = currentValue + key;
+                              }
+                              if (activeKeyboardField === "voucherCode") {
+                                setVoucherCode(newValue);
+                              } else {
+                                setVoucherAmount(newValue);
+                              }
+                            }}
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              className="flex-1 border-pink-200"
+                              onClick={() =>
+                                setActiveKeyboardField("voucherCode")
+                              }
+                              variant={
+                                activeKeyboardField === "voucherCode"
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              Edit Code
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 border-pink-200"
+                              onClick={() =>
+                                setActiveKeyboardField("voucherAmount")
+                              }
+                              variant={
+                                activeKeyboardField === "voucherAmount"
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              Edit Amount
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 )}
